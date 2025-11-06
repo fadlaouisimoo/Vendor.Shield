@@ -1,0 +1,66 @@
+:root{--bg:#0a0f1c;--card:#0f1324;--muted:#98a2b3;--text:#eef2ff;--accent:#f59e0b;--accent-2:#fb923c;--warn:#f59e0b;--err:#ef4444;--btn:#f59e0b;--border:#1b2238;--shadow:0 10px 25px rgba(2,8,23,.35)}
+*{box-sizing:border-box}
+@keyframes fadeInUp{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:translateY(0)}}
+@keyframes pulseGlow{0%,100%{box-shadow:0 0 0 0 rgba(59,130,246,.45)}50%{box-shadow:0 0 0 6px rgba(59,130,246,.0)}}
+body{margin:0;background:linear-gradient(180deg,#0d1228 0%,#0b1327 35%,#0a1022 70%,#080b17 100%),url('/public/bg.svg') center/cover fixed no-repeat;color:var(--text);font-family:Poppins,Inter,system-ui,Segoe UI,Roboto,Arial,sans-serif;line-height:1.55;position:relative}
+body:after{content:"";position:fixed;left:0;right:0;bottom:0;height:220px;background:radial-gradient(1200px 180px at 50% 100%,rgba(255,87,34,.35),rgba(255,87,34,.1) 40%,transparent 70%);pointer-events:none;filter:blur(2px)}
+.container{max-width:1200px;margin:0 auto;padding:20px}
+.topbar{background:linear-gradient(180deg,rgba(13,19,41,.9),rgba(10,16,32,.8));backdrop-filter:saturate(140%) blur(6px);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:20}
+.topbar h1{margin:0;font-size:22px;letter-spacing:.3px}
+.topbar nav{display:flex;gap:12px;align-items:center}
+.topbar .container{display:flex;justify-content:space-between;align-items:center}
+.topbar a{color:#c7d2fe;text-decoration:none}
+.topbar a:hover{color:#e5e7ff;text-decoration:underline}
+.btn{display:inline-block;background:linear-gradient(135deg,#f59e0b,#fb923c);color:#0a0f1c;padding:10px 14px;border-radius:10px;text-decoration:none;border:1px solid rgba(255,255,255,.06);cursor:pointer;box-shadow:var(--shadow);transition:transform .15s ease,box-shadow .2s ease,opacity .2s}
+/* Ensure button text is dark and readable even inside header links */
+.topbar a.btn,.btn:link,.btn:visited{color:#0a0f1c !important}
+.btn{display:inline-block;background:linear-gradient(135deg,#f59e0b,#fb923c);color:#0b0f1c;padding:10px 14px;border-radius:10px;text-decoration:none;border:1px solid rgba(255,255,255,.06);cursor:pointer;box-shadow:var(--shadow);transition:transform .15s ease,box-shadow .2s ease,opacity .2s}
+.btn:hover{transform:translateY(-1px);opacity:.98}
+.btn:active{transform:translateY(0)}
+.btn.accent{background:linear-gradient(135deg,#fb923c,#f59e0b)}
+.muted{color:var(--muted)}
+/* Global link styling */
+a, a:visited{color:#93c5fd;text-decoration:none}
+a:hover{color:#bfdbfe;text-decoration:underline}
+a:focus{outline:none;box-shadow:0 0 0 3px rgba(59,130,246,.35);border-radius:6px}
+main.container{animation:fadeInUp .35s ease both}
+.card{background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01));border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow)}
+.table{width:100%;border-collapse:separate;border-spacing:0;background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01));border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.table th,.table td{padding:14px 16px;border-bottom:1px solid var(--border);text-align:left}
+.table th{color:#b6c2e1;background:linear-gradient(180deg,rgba(255,255,255,.03),rgba(255,255,255,.01))}
+.table tr:last-child td{border-bottom:none}
+.table tbody tr{transition:background .2s ease, transform .2s ease}
+.table tbody tr:hover{background:rgba(6,182,212,.05)}
+.badge{padding:6px 10px;border-radius:999px;font-size:12px;border:1px solid rgba(255,255,255,.08)}
+.badge.ok{background:linear-gradient(180deg,rgba(48,37,7,.85),rgba(48,37,7,.45));color:#fbbf24}
+.badge.warn{background:linear-gradient(180deg,rgba(43,35,5,.8),rgba(43,35,5,.4));color:#fbbf24}
+.badge.err{background:linear-gradient(180deg,rgba(59,10,10,.8),rgba(59,10,10,.4));color:#f87171}
+.form{display:flex;flex-direction:column;gap:14px;max-width:640px}
+.form input[type="text"],.form input[type="email"],.form input[type="file"]{width:100%;padding:12px 12px;border-radius:10px;border:1px solid var(--border);background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01));color:var(--text);transition:border-color .2s ease, box-shadow .2s ease}
+.form input:focus{outline:none;border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.2)}
+.question{border:1px solid var(--border);border-radius:12px;padding:14px;background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01));transition:transform .2s ease}
+.question:hover{transform:translateY(-1px)}
+.question legend{padding:0 6px}
+.kpis{margin-top:18px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.kpi{background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01));border:1px solid var(--border);border-radius:14px;padding:14px;position:relative;overflow:hidden}
+.kpi:before{content:"";position:absolute;inset:-20% -40% auto auto;background:radial-gradient(220px 80px at 100% 0%,rgba(34,197,94,.18),transparent 60%);pointer-events:none}
+.kpi-label{color:#aab7d6;font-size:12px}
+.kpi-value{font-size:24px;font-weight:800;letter-spacing:.3px}
+.footer{border-top:1px solid var(--border);margin-top:26px;opacity:.9}
+.topbar .btn{animation:pulseGlow 2.6s ease-in-out infinite}
+
+/* Assessment page improvements */
+.form-card{max-width:780px;margin:18px auto;padding:18px}
+.form-card h2{margin-top:0;margin-bottom:6px}
+.form-intro{color:#b8c1d9;margin-bottom:14px}
+.question legend{font-weight:600}
+.radio-group{display:flex;gap:10px;margin-top:8px;margin-bottom:8px}
+.radio-pill{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;border:1px solid var(--border);background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01));cursor:pointer;transition:all .2s}
+.radio-pill:hover{transform:translateY(-1px);border-color:#3553a9}
+.radio-pill input{appearance:none;width:14px;height:14px;border-radius:50%;border:2px solid #94a3b8;display:inline-block;position:relative}
+.radio-pill input:checked{border-color:#fb923c;background:#fb923c}
+.upload input[type="file"]{border-style:dashed}
+.submit-row{margin-top:12px}
+.btn.primary{background:linear-gradient(135deg,#fb923c,#f59e0b)}
+
+

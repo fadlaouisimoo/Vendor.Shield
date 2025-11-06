@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title><%= title || 'VendorShield' %></title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="/public/styles.css" />
+</head>
+<body>
+	<header class="topbar">
+		<div class="container">
+			<div class="brand" style="display:flex;align-items:center;gap:10px">
+				<img src="/public/brand.svg" alt="Vendor Shield" style="height:30px;width:auto"/>
+			</div>
+			<nav>
+				<a href="/" style="display:inline-flex;align-items:center;gap:6px">
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+					Tableau de bord
+				</a>
+				<a class="btn accent" href="/suppliers/new" style="display:inline-flex;align-items:center;gap:6px">
+					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+					Nouveau fournisseur
+				</a>
+			</nav>
+		</div>
+	</header>
+	<main class="container">
+		<%- body %>
+	</main>
+	<footer class="footer">
+		<div class="container">© <%= new Date().getFullYear() %> VendorShield</div>
+	</footer>
+</body>
+</html>
+
+

@@ -1,0 +1,59 @@
+<h2><%= supplier.name %></h2>
+<p class="muted">Contact: <%= supplier.contact_email || '-' %></p>
+<p>
+	Lien d'invitation: 
+	<a href="<%= baseUrl %>/invite/<%= supplier.invite_token %>" target="_blank"><%= baseUrl %>/invite/<%= supplier.invite_token %></a>
+</p>
+
+<h3>Évaluations</h3>
+<table class="table">
+	<thead>
+		<tr>
+			<th>Date</th>
+			<th>Score</th>
+			<th>Statut</th>
+			<th>Détails</th>
+		</tr>
+	</thead>
+	<tbody>
+		<% if (assessments.length === 0) { %>
+			<tr><td colspan="4" class="muted">Aucune évaluation</td></tr>
+		<% } %>
+		<% assessments.forEach(a => { %>
+			<tr>
+				<td><%= new Date(a.created_at).toLocaleString() %></td>
+				<td><%= a.score %>%</td>
+				<td>
+					<span class="badge <%= a.status === 'Conforme' ? 'ok' : (a.status === 'En cours' ? 'warn' : 'err') %>">
+						<% if (a.status === 'Conforme') { %>
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><polyline points="20 6 9 17 4 12"/></svg>
+						<% } else if (a.status === 'En cours') { %>
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+						<% } else { %>
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+						<% } %>
+						<%= a.status %>
+					</span>
+				</td>
+				<td>
+					<details>
+						<summary>Voir</summary>
+						<% const answers = JSON.parse(a.answers_json || '{}'); const proofs = JSON.parse(a.proofs_json || '{}'); %>
+						<ul>
+							<% QUESTIONS.forEach(q => { %>
+								<li>
+									<strong><%= q.text %></strong> — Réponse: <%= (answers[q.id] || '').toUpperCase() %>
+									<% if (proofs[q.id]) { %>
+										— Preuve: <a href="<%= proofs[q.id] %>" target="_blank">voir</a>
+									<% } %>
+								</li>
+							<% }) %>
+						</ul>
+					</details>
+				</td>
+			</tr>
+		<% }) %>
+	</tbody>
+</table>
+
+

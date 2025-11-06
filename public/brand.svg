@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 42" fill="none">
+  <defs>
+    <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#38bdf8"/>
+      <stop offset="1" stop-color="#0284c7"/>
+    </linearGradient>
+  </defs>
+  <!-- simplified blue chevron mark -->
+  <path d="M10 30 L24 12 L38 30" stroke="url(#g1)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="54" y="29" font-size="22" font-family="Inter, Segoe UI, Arial, sans-serif" fill="#e5e7eb" letter-spacing="1">Vendor Shield</text>
+</svg>
+

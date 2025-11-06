@@ -1,0 +1,28 @@
+<div class="form-card card">
+    <h2>Auto-évaluation — <%= supplier.name %></h2>
+    <p class="form-intro">Répondez aux exigences et ajoutez des preuves (PDF, images) si possible. Les réponses <strong>Oui</strong> améliorent votre score; <strong>N/A</strong> exclut la question du calcul.</p>
+
+    <form class="form" method="post" enctype="multipart/form-data">
+        <% QUESTIONS.forEach(q => { %>
+            <fieldset class="question">
+                <legend><%= q.text %></legend>
+                <div class="radio-group">
+                    <label class="radio-pill"><input type="radio" name="<%= q.id %>" value="yes" required /> Oui</label>
+                    <label class="radio-pill"><input type="radio" name="<%= q.id %>" value="no" /> Non</label>
+                    <label class="radio-pill"><input type="radio" name="<%= q.id %>" value="na" /> N/A</label>
+                </div>
+                <div class="upload">
+                    <label>Preuve (optionnel)
+                        <input type="file" name="<%= q.id %>_file" />
+                    </label>
+                </div>
+            </fieldset>
+        <% }) %>
+
+        <div class="submit-row">
+            <button class="btn primary" type="submit">Soumettre l'évaluation</button>
+        </div>
+    </form>
+</div>
+
+
