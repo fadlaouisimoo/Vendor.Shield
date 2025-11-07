@@ -1,38 +1,52 @@
-<h2>Fournisseurs</h2>
+<h2><%= t('common.suppliers') %></h2>
 
 <table class="table">
 	<thead>
 		<tr>
-			<th>Nom</th>
-			<th>Email</th>
-			<th>Score</th>
-			<th>Statut</th>
+			<th><%= t('common.name') %></th>
+			<th><%= t('common.email') %></th>
+			<th><%= t('common.score') %></th>
+			<th><%= t('common.status') %></th>
 			<th>Actions</th>
 		</tr>
 	</thead>
 	<tbody>
 		<% if (!suppliers || suppliers.length === 0) { %>
-			<tr><td colspan="5" class="muted">Aucun fournisseur</td></tr>
+			<tr><td colspan="5" class="muted"><%= lang === 'en' ? 'No suppliers' : 'Aucun fournisseur' %></td></tr>
 		<% } %>
 		<% (suppliers || []).forEach(s => { %>
+			<% 
+			// Use statusKey to determine badge type (s.statusKey is set in app.js)
+			const statusKey = s.statusKey || (s.status === 'COMPLIANT' || s.status === 'Conforme' || s.status === 'Compliant' ? 'COMPLIANT' 
+				: (s.status === 'IN_PROGRESS' || s.status === 'En cours' || s.status === 'In Progress' ? 'IN_PROGRESS' : 'NON_COMPLIANT'));
+			const isCompliant = statusKey === 'COMPLIANT';
+			const isInProgress = statusKey === 'IN_PROGRESS';
+			// Status text is already translated in app.js
+			const statusText = s.status;
+			%>
 			<tr>
-				<td><a href="/suppliers/<%= s.id %>"><%= s.name %></a></td>
-				<td><%= s.contact_email || '-' %></td>
-				<td><strong><%= s.score %>%</strong></td>
-				<td>
-					<span class="badge <%= s.status === 'Conforme' ? 'ok' : (s.status === 'En cours' ? 'warn' : 'err') %>">
-						<% if (s.status === 'Conforme') { %>
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><polyline points="20 6 9 17 4 12"/></svg>
-						<% } else if (s.status === 'En cours') { %>
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+				<td data-label="<%= t('common.name') %>"><a href="<%= urlWithLang('/suppliers/' + s.id) %>"><%= s.name %></a></td>
+				<td data-label="<%= t('common.email') %>"><%= s.contact_email || '-' %></td>
+				<td data-label="<%= t('common.score') %>"><strong><%= s.score %>%</strong></td>
+				<td class="status-cell" data-label="<%= t('common.status') %>">
+					<span class="badge <%= isCompliant ? 'ok' : (isInProgress ? 'warn' : 'err') %>">
+						<% if (isCompliant) { %>
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><polyline points="20 6 9 17 4 12"/></svg>
+						<% } else if (isInProgress) { %>
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
 						<% } else { %>
-							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+							<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
 						<% } %>
-						<%= s.status %>
+						<%= statusText %>
 					</span>
 				</td>
-				<td>
-					<a class="btn" href="<%= baseUrl %>/invite/<%= s.invite_token %>" target="_blank">Lien d'invitation</a>
+				<td class="actions-cell" data-label="Actions">
+					<div class="actions-wrapper">
+						<a class="btn action" href="<%= baseUrl %>/invite/<%= s.invite_token %>" target="_blank"><%= t('common.inviteLink') %></a>
+						<form method="post" action="<%= urlWithLang('/suppliers/' + s.id + '/delete') %>" style="margin:0;padding:0;display:flex" onsubmit="return confirm('<%= t('delete.confirm') %>');">
+							<button class="btn action" type="submit" style="background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;border:none;font-family:inherit"><%= t('common.delete') %></button>
+						</form>
+					</div>
 				</td>
 			</tr>
 		<% }) %>
@@ -41,26 +55,24 @@
 
 <section class="kpis">
 	<div class="kpi">
-		<div class="kpi-label">% conformes</div>
+		<div class="kpi-label"><%= lang === 'en' ? '% Compliant' : '% conformes' %></div>
 		<div class="kpi-value">
-			<% const nb = (suppliers || []).length; const nbOk = (suppliers || []).filter(x => x.status === 'Conforme').length; const pct = nb ? Math.round((nbOk/nb)*100) : 0; %>
+			<% const nb = (suppliers || []).length; const nbOk = (suppliers || []).filter(x => (x.statusKey || 'IN_PROGRESS') === 'COMPLIANT').length; const pct = nb ? Math.round((nbOk/nb)*100) : 0; %>
 			<%= pct %>%
 		</div>
 	</div>
 	<div class="kpi">
-		<div class="kpi-label">Risques critiques identifiés</div>
+		<div class="kpi-label"><%= lang === 'en' ? 'Critical Risks' : 'Risques critiques identifiés' %></div>
 		<div class="kpi-value">
-			<% const nbCrit = (suppliers || []).filter(x => x.status === 'Non Conforme').length; %>
+			<% const nbCrit = (suppliers || []).filter(x => (x.statusKey || 'IN_PROGRESS') === 'NON_COMPLIANT').length; %>
 			<%= nbCrit %>
 		</div>
 	</div>
 	<div class="kpi">
-		<div class="kpi-label">Moyenne des scores</div>
+		<div class="kpi-label"><%= lang === 'en' ? 'Average Score' : 'Moyenne des scores' %></div>
 		<div class="kpi-value">
 			<% const avg = (suppliers || []).length ? Math.round((suppliers.reduce((a,b)=>a+(b.score||0),0)/(suppliers.length))) : 0; %>
 			<%= avg %>%
 		</div>
 	</div>
 </section>
-
-

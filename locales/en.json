@@ -1,0 +1,88 @@
+{
+  "common": {
+    "dashboard": "Dashboard",
+    "newSupplier": "New Supplier",
+    "supplier": "Supplier",
+    "suppliers": "Suppliers",
+    "details": "Details",
+    "viewDetails": "View Details",
+    "hideDetails": "Hide Details",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "copy": "Copy",
+    "copied": "Copied",
+    "linkCopied": "Link copied",
+    "inviteLink": "Invitation Link",
+    "contact": "Contact",
+    "date": "Date",
+    "score": "Score",
+    "status": "Status",
+    "assessments": "Assessments",
+    "noAssessments": "No assessments",
+    "compliance": "Compliant",
+    "inProgress": "In Progress",
+    "nonCompliant": "Non-Compliant",
+    "yes": "Yes",
+    "no": "No",
+    "na": "N/A",
+    "viewProof": "View Proof",
+    "submit": "Submit",
+    "back": "Back",
+    "save": "Save",
+    "name": "Name",
+    "email": "Email"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "totalSuppliers": "Total Suppliers",
+    "averageScore": "Average Score",
+    "compliantSuppliers": "Compliant Suppliers",
+    "addSupplier": "Add Supplier"
+  },
+  "supplier": {
+    "new": "New Supplier",
+    "name": "Supplier Name",
+    "contactEmail": "Contact Email",
+    "add": "Add Supplier"
+  },
+  "assessment": {
+    "title": "Compliance Assessment",
+    "intro": "Please answer the following questions regarding your compliance with security requirements.",
+    "question": "Question",
+    "answer": "Answer",
+    "uploadProof": "Upload proof (optional)",
+    "submitSuccess": "Thank you! Your assessment has been submitted successfully.",
+    "submitted": "Assessment submitted"
+  },
+  "delete": {
+    "confirm": "Are you sure you want to delete this supplier?",
+    "warning": "This action is irreversible and will delete all associated assessments."
+  },
+  "landing": {
+    "title": "VendorShield Compliance Portal",
+    "subtitle": "Choose your space to continue.",
+    "supplierSpace": "Supplier Space",
+    "supplierDescription": "Register your organisation, complete the self-assessment and upload evidence in minutes.",
+    "supplierAction": "Enter supplier space",
+    "adminSpace": "Security Team Space",
+    "adminDescription": "Monitor suppliers, invite new partners and drive compliance.",
+    "adminAction": "Go to dashboard",
+    "supplierPortalTitle": "Supplier Space",
+    "supplierPortalIntro": "Please provide your company name and a contact before starting the self-assessment.",
+    "startAssessment": "Start self-assessment"
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "username": "Username",
+    "password": "Password",
+    "loginButton": "Sign in",
+    "loginTitle": "Admin Login",
+    "loginSubtitle": "Please sign in to access the dashboard",
+    "invalidCredentials": "Invalid username or password",
+    "required": "This field is required",
+    "accessDenied": "Access denied. Please log in."
+  }
+}
+

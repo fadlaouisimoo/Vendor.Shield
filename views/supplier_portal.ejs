@@ -1,0 +1,22 @@
+<section class="portal">
+	<div class="portal-header">
+		<a href="<%= urlWithLang('/') %>" class="btn portal-back">
+			<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+				<path d="M19 12H5M12 19l-7-7 7-7"/>
+			</svg>
+			<%= t('common.back') %>
+		</a>
+		<h1><%= t('landing.supplierPortalTitle') %></h1>
+		<p class="muted"><%= t('landing.supplierPortalIntro') %></p>
+	</div>
+	<form class="form card portal-form" method="post" action="<%= urlWithLang('/supplier-space') %>">
+		<label><%= t('supplier.name') %>
+			<input type="text" name="name" required />
+		</label>
+		<label><%= t('supplier.contactEmail') %>
+			<input type="email" name="contact_email" required />
+		</label>
+		<button class="btn primary" type="submit"><%= t('landing.startAssessment') %></button>
+	</form>
+</section>
+

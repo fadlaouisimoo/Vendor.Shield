@@ -1,0 +1,36 @@
+<section class="portal auth-portal">
+	<a href="<%= urlWithLang('/') %>" class="btn portal-back">
+		<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+			<line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>
+		</svg>
+		<%= t('common.back') %>
+	</a>
+	<div class="card portal-form auth-card">
+		<h2><%= t('auth.loginTitle') %></h2>
+		<p class="form-intro"><%= t('auth.loginSubtitle') %></p>
+
+		<% if (typeof error !== 'undefined' && error) { %>
+			<div class="alert alert-error">
+				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+				</svg>
+				<%= error %>
+			</div>
+		<% } %>
+
+		<form class="form" method="post" action="<%= urlWithLang('/login') %>">
+			<label>
+				<%= t('auth.username') %>
+				<input type="text" name="username" required autofocus />
+			</label>
+			<label>
+				<%= t('auth.password') %>
+				<input type="password" name="password" required />
+			</label>
+			<button class="btn primary" type="submit">
+				<%= t('auth.loginButton') %>
+			</button>
+		</form>
+	</div>
+</section>
+

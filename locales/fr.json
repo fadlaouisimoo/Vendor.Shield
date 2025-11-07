@@ -1,0 +1,88 @@
+{
+  "common": {
+    "dashboard": "Tableau de bord",
+    "newSupplier": "Nouveau fournisseur",
+    "supplier": "Fournisseur",
+    "suppliers": "Fournisseurs",
+    "details": "Détails",
+    "viewDetails": "Voir les détails",
+    "hideDetails": "Masquer les détails",
+    "delete": "Supprimer",
+    "cancel": "Annuler",
+    "confirm": "Confirmer",
+    "copy": "Copier",
+    "copied": "Copié",
+    "linkCopied": "Lien copié",
+    "inviteLink": "Lien d'invitation",
+    "contact": "Contact",
+    "date": "Date",
+    "score": "Score",
+    "status": "Statut",
+    "assessments": "Évaluations",
+    "noAssessments": "Aucune évaluation",
+    "compliance": "Conforme",
+    "inProgress": "En cours",
+    "nonCompliant": "Non conforme",
+    "yes": "Oui",
+    "no": "Non",
+    "na": "N/A",
+    "viewProof": "Voir la preuve",
+    "submit": "Soumettre",
+    "back": "Retour",
+    "save": "Enregistrer",
+    "name": "Nom",
+    "email": "Email"
+  },
+  "dashboard": {
+    "title": "Tableau de bord",
+    "totalSuppliers": "Total Fournisseurs",
+    "averageScore": "Score Moyen",
+    "compliantSuppliers": "Fournisseurs Conformes",
+    "addSupplier": "Ajouter un fournisseur"
+  },
+  "supplier": {
+    "new": "Nouveau Fournisseur",
+    "name": "Nom du fournisseur",
+    "contactEmail": "Email de contact",
+    "add": "Ajouter le fournisseur"
+  },
+  "assessment": {
+    "title": "Évaluation de Conformité",
+    "intro": "Veuillez répondre aux questions suivantes concernant votre conformité aux exigences de sécurité.",
+    "question": "Question",
+    "answer": "Réponse",
+    "uploadProof": "Télécharger une preuve (optionnel)",
+    "submitSuccess": "Merci ! Votre évaluation a été soumise avec succès.",
+    "submitted": "Évaluation soumise"
+  },
+  "delete": {
+    "confirm": "Êtes-vous sûr de vouloir supprimer ce fournisseur ?",
+    "warning": "Cette action est irréversible et supprimera toutes les évaluations associées."
+  },
+  "landing": {
+    "title": "Portail de Conformité VendorShield",
+    "subtitle": "Choisissez votre espace pour continuer.",
+    "supplierSpace": "Espace Fournisseur",
+    "supplierDescription": "Déclarez votre organisation, complétez l'auto-évaluation et envoyez vos preuves en quelques minutes.",
+    "supplierAction": "Entrer dans l'espace fournisseur",
+    "adminSpace": "Espace Équipe Sécurité",
+    "adminDescription": "Suivez les fournisseurs, invitez de nouveaux partenaires et pilotez la conformité.",
+    "adminAction": "Accéder au tableau de bord",
+    "supplierPortalTitle": "Espace Fournisseur",
+    "supplierPortalIntro": "Veuillez indiquer le nom de votre entreprise et un contact avant de démarrer l'auto-évaluation.",
+    "startAssessment": "Commencer l'auto-évaluation"
+  },
+  "auth": {
+    "login": "Connexion",
+    "logout": "Déconnexion",
+    "username": "Nom d'utilisateur",
+    "password": "Mot de passe",
+    "loginButton": "Se connecter",
+    "loginTitle": "Connexion à l'espace admin",
+    "loginSubtitle": "Veuillez vous connecter pour accéder au tableau de bord",
+    "invalidCredentials": "Nom d'utilisateur ou mot de passe incorrect",
+    "required": "Ce champ est requis",
+    "accessDenied": "Accès refusé. Veuillez vous connecter."
+  }
+}
+

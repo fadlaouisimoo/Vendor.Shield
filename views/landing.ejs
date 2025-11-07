@@ -1,0 +1,35 @@
+<section class="landing">
+	<div class="landing-intro">
+		<h1><%= t('landing.title') %></h1>
+		<p class="muted"><%= t('landing.subtitle') %></p>
+	</div>
+	<div class="landing-grid">
+		<a class="landing-card" href="<%= urlWithLang('/supplier-space') %>">
+			<div class="landing-card__badge" aria-hidden="true">
+				<span>01</span>
+			</div>
+			<div class="landing-card__content">
+				<h2><%= t('landing.supplierSpace') %></h2>
+				<p><%= t('landing.supplierDescription') %></p>
+				<span class="landing-card__cta">
+					<%= t('landing.supplierAction') %>
+					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+				</span>
+			</div>
+		</a>
+		<a class="landing-card" href="<%= urlWithLang('/login') %>">
+			<div class="landing-card__badge" aria-hidden="true">
+				<span>02</span>
+			</div>
+			<div class="landing-card__content">
+				<h2><%= t('landing.adminSpace') %></h2>
+				<p><%= t('landing.adminDescription') %></p>
+				<span class="landing-card__cta">
+					<%= t('landing.adminAction') %>
+					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+				</span>
+			</div>
+		</a>
+	</div>
+</section>
+

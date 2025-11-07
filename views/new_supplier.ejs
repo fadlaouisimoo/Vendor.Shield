@@ -1,13 +1,13 @@
-<h2>Ajouter un fournisseur</h2>
+<h2><%= t('supplier.new') %></h2>
 
-<form class="form" method="post" action="/suppliers">
-	<label>Nom
+<form class="form" method="post" action="<%= urlWithLang('/suppliers') %>">
+	<label><%= t('supplier.name') %>
 		<input type="text" name="name" required />
 	</label>
-	<label>Email de contact
+	<label><%= t('supplier.contactEmail') %>
 		<input type="email" name="contact_email" />
 	</label>
-	<button class="btn" type="submit">Créer</button>
+	<button class="btn" type="submit"><%= t('supplier.add') %></button>
 </form>
 
 
