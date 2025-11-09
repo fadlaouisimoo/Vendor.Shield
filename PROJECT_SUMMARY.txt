@@ -1,0 +1,147 @@
+═══════════════════════════════════════════════════════════════════════════════
+                    VENDORSHIELD - RÉSUMÉ TECHNIQUE
+                    Informations Essentielles pour Rapport
+═══════════════════════════════════════════════════════════════════════════════
+
+📦 PROJET : VendorShield - Portail de Conformité Fournisseurs
+📅 Version : 1.0.0
+
+═══════════════════════════════════════════════════════════════════════════════
+1. LANGAGES & TECHNOLOGIES PRINCIPALES
+═══════════════════════════════════════════════════════════════════════════════
+
+• JavaScript (ES6+) - Langage principal
+  - Modules ES6 (import/export)
+  - Async/Await, Promises
+
+• Node.js - Runtime JavaScript
+  - Version requise : 18+
+
+• Express.js v4.19.2 - Framework web backend
+
+• EJS v3.1.10 - Moteur de templates côté serveur
+
+• SQLite3 v5.1.7 - Base de données embarquée
+  - Mode WAL (Write-Ahead Logging) pour performance
+
+• HTML5 / CSS3 - Frontend
+  - CSS personnalisé (pas de framework CSS)
+  - Responsive design (media queries)
+
+═══════════════════════════════════════════════════════════════════════════════
+2. BIBLIOTHÈQUES & MIDDLEWARE
+═══════════════════════════════════════════════════════════════════════════════
+
+• express-session v1.18.1 - Gestion des sessions utilisateur
+• cookie-parser v1.4.7 - Parsing des cookies
+• multer v1.4.5-lts.1 - Upload de fichiers
+• nanoid v5.0.7 - Génération de tokens uniques
+• nodemailer v6.10.1 - Envoi d'emails (SMTP)
+• dotenv v16.6.1 - Variables d'environnement
+• express-ejs-layouts v2.5.1 - Layouts pour EJS
+
+═══════════════════════════════════════════════════════════════════════════════
+3. ARCHITECTURE
+═══════════════════════════════════════════════════════════════════════════════
+
+• Architecture MVC (Model-View-Controller)
+  - Model : db.js (accès données)
+  - View : views/*.ejs (templates)
+  - Controller : app.js (routes, logique métier)
+
+• Structure :
+  - Backend : app.js, db.js, email.js
+  - Frontend : views/ (9 templates EJS), public/styles.css
+  - Configuration : package.json, .env, locales/
+
+═══════════════════════════════════════════════════════════════════════════════
+4. FONCTIONNALITÉS TECHNIQUES PRINCIPALES
+═══════════════════════════════════════════════════════════════════════════════
+
+✓ Authentification par session (express-session)
+✓ Upload de fichiers (multer) avec stockage sur disque
+✓ Calcul automatique de scores pondérés
+✓ Génération de tokens d'invitation (nanoid, 12 caractères)
+✓ Système de validation avec workflow (Approuver/Rejeter/Clarifications)
+✓ Notifications email automatiques (nodemailer)
+✓ Interface responsive (mobile, tablette, desktop)
+✓ Mode clair/sombre avec localStorage
+✓ Internationalisation (i18n) FR/EN personnalisée
+✓ Base de données SQLite avec mode WAL
+
+═══════════════════════════════════════════════════════════════════════════════
+5. DESIGN & INTERFACE
+═══════════════════════════════════════════════════════════════════════════════
+
+• Polices : Google Fonts (Poppins)
+• Icônes : SVG inline (Feather-style)
+• Thème : Mode clair/sombre avec CSS Variables
+• Responsive : Media queries (breakpoints 768px, 480px)
+• Animations : CSS keyframes (fadeInUp, pulseGlow, slideDown)
+
+═══════════════════════════════════════════════════════════════════════════════
+6. BASE DE DONNÉES
+═══════════════════════════════════════════════════════════════════════════════
+
+• SQLite3
+• Tables :
+  - suppliers (id, name, contact_email, invite_token, created_at)
+  - assessments (id, supplier_id, answers_json, proofs_json, score, status,
+                 validation_status, validated_by, validated_at,
+                 validation_comments, manual_status_override, created_at)
+• Mode WAL activé pour performance
+
+═══════════════════════════════════════════════════════════════════════════════
+7. SÉCURITÉ
+═══════════════════════════════════════════════════════════════════════════════
+
+✓ Sessions sécurisées (httpOnly, secure en production)
+✓ Authentification par middleware (requireAuth)
+✓ Requêtes SQL préparées (protection injection)
+✓ Tokens aléatoires pour invitations
+✓ Credentials admin configurables (variables d'environnement)
+
+═══════════════════════════════════════════════════════════════════════════════
+8. OUTILS DE DÉVELOPPEMENT
+═══════════════════════════════════════════════════════════════════════════════
+
+• npm - Gestionnaire de paquets
+• nodemon v3.1.7 - Rechargement automatique (développement)
+
+═══════════════════════════════════════════════════════════════════════════════
+9. FONCTIONNALITÉS MÉTIER
+═══════════════════════════════════════════════════════════════════════════════
+
+• Gestion des fournisseurs (CRUD)
+• Évaluations de conformité (questionnaire 5 questions pondérées)
+• Calcul automatique de scores (0-100%)
+• Détermination de statuts (Conforme ≥80%, En cours 50-79%, Non conforme <50%)
+• Workflow de validation (PENDING → APPROVED/REJECTED/NEEDS_CLARIFICATION)
+• Notifications email automatiques
+• Tableau de bord avec KPIs
+• Portail fournisseur (auto-évaluation, consultation statut)
+
+═══════════════════════════════════════════════════════════════════════════════
+10. DÉPENDANCES (10)
+═══════════════════════════════════════════════════════════════════════════════
+
+cookie-parser, dotenv, ejs, express, express-ejs-layouts, express-session,
+multer, nanoid, nodemailer, sqlite3
+
+═══════════════════════════════════════════════════════════════════════════════
+RÉSUMÉ EXÉCUTIF
+═══════════════════════════════════════════════════════════════════════════════
+
+VendorShield est une application web full-stack développée en JavaScript (Node.js)
+avec Express.js pour le backend et EJS pour le frontend. Elle utilise SQLite3
+comme base de données et implémente un système complet de gestion de conformité
+des fournisseurs avec workflow de validation, notifications email, et interface
+responsive multilingue (FR/EN).
+
+Technologies clés : Node.js, Express.js, EJS, SQLite3, Nodemailer
+Architecture : MVC
+Sécurité : Sessions, authentification, requêtes préparées
+Design : Responsive, thème clair/sombre, CSS personnalisé
+
+═══════════════════════════════════════════════════════════════════════════════
+

@@ -1,10 +1,25 @@
 <div class="form-card card">
     <h2><%= lang === 'en' ? 'Self-Assessment' : 'Auto-évaluation' %> — <%= supplier.name %></h2>
-    <p class="form-intro"><%= t('assessment.intro') %> <%= lang === 'en' ? '<strong>Yes</strong> answers improve your score; <strong>N/A</strong> excludes the question from calculation.' : 'Les réponses <strong>Oui</strong> améliorent votre score; <strong>N/A</strong> exclut la question du calcul.' %></p>
+    <p class="form-intro"><%= t('assessment.intro') %> <%- lang === 'en' ? '<strong>Yes</strong> answers improve your score; <strong>N/A</strong> excludes the question from calculation.' : 'Les réponses <strong>Oui</strong> améliorent votre score; <strong>N/A</strong> exclut la question du calcul.' %></p>
 
     <form class="form" method="post" enctype="multipart/form-data">
         <input type="hidden" name="lang" value="<%= lang %>" />
-        <% QUESTIONS.forEach(q => { %>
+        <% 
+        let currentSection = 0;
+        QUESTIONS.forEach(q => { 
+            if (q.section !== currentSection) {
+                currentSection = q.section;
+        %>
+            <div class="section-header">
+                <h3 class="section-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:8px">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                        <line x1="9" y1="3" x2="9" y2="21"/>
+                    </svg>
+                    <%= q.sectionTitle %>
+                </h3>
+            </div>
+        <% } %>
             <fieldset class="question">
                 <legend><%= q.text %></legend>
                 <div class="radio-group">
@@ -13,17 +28,48 @@
                     <label class="radio-pill"><input type="radio" name="<%= q.id %>" value="na" /> <%= t('common.na') %></label>
                 </div>
                 <div class="upload">
-                    <label><%= t('assessment.uploadProof') %>
-                        <input type="file" name="<%= q.id %>_file" />
+                    <label class="file-upload-label">
+                        <input type="file" name="<%= q.id %>_file" class="file-upload-input" />
+                        <span class="file-upload-button">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="17 8 12 3 7 8"/>
+                                <line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                            <%= t('assessment.uploadProof') %>
+                        </span>
+                        <span class="file-upload-name"></span>
                     </label>
                 </div>
             </fieldset>
         <% }) %>
 
         <div class="submit-row">
-            <button class="btn primary" type="submit"><%= t('assessment.submit') %></button>
+            <button class="btn primary" type="submit"><%= t('common.submit') %></button>
         </div>
     </form>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const fileInputs = document.querySelectorAll('.file-upload-input');
+    
+    fileInputs.forEach(input => {
+        const label = input.closest('.file-upload-label');
+        const fileNameSpan = label.querySelector('.file-upload-name');
+        
+        input.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                fileNameSpan.textContent = file.name;
+                fileNameSpan.style.display = 'inline-block';
+            } else {
+                fileNameSpan.textContent = '';
+                fileNameSpan.style.display = 'none';
+            }
+        });
+    });
+});
+</script>
 
 

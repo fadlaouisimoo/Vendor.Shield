@@ -31,7 +31,8 @@
     "back": "Back",
     "save": "Save",
     "name": "Name",
-    "email": "Email"
+    "email": "Email",
+    "markAsRead": "Mark as read"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -50,10 +51,41 @@
     "title": "Compliance Assessment",
     "intro": "Please answer the following questions regarding your compliance with security requirements.",
     "question": "Question",
+    "questions": "Questions",
     "answer": "Answer",
     "uploadProof": "Upload proof (optional)",
     "submitSuccess": "Thank you! Your assessment has been submitted successfully.",
-    "submitted": "Assessment submitted"
+    "submitted": "Assessment submitted",
+    "awaitingValidation": "Awaiting validation",
+    "validationMessage": "The security team will review your assessment and notify you of the result.",
+    "checkStatus": "Check status",
+    "closePage": "You can close this page. You will be notified once the assessment is validated.",
+    "statusTitle": "Your assessment status",
+    "submittedOn": "Submitted on",
+    "pendingMessage": "Your assessment is being reviewed by the security team. You will be notified once validation is complete.",
+    "resubmit": "Resubmit",
+    "noAssessment": "No assessment found",
+    "startAssessment": "Start assessment",
+    "backToForm": "Back to form",
+    "emailNotification": "Email notification",
+    "emailNotificationMessage": "You will receive an email at the provided address when the security team validates your assessment. Check your inbox (and spam folder)."
+  },
+  "validation": {
+    "validationStatus": "Validation Status",
+    "validationInfo": "Validation Information",
+    "validateAssessment": "Validate Assessment",
+    "approve": "Approve",
+    "reject": "Reject",
+    "requestClarification": "Request Clarification",
+    "validatedBy": "Validated by",
+    "validatedAt": "Validation date",
+    "status": "Status",
+    "comments": "Comments",
+    "commentsPlaceholder": "Comments (optional)",
+    "rejectReasonRequired": "Rejection reason (required)",
+    "rejectionReason": "Rejection reason",
+    "clarificationRequest": "Describe the clarifications needed",
+    "useCalculatedStatus": "Use automatically calculated status"
   },
   "delete": {
     "confirm": "Are you sure you want to delete this supplier?",

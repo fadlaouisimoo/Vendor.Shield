@@ -31,7 +31,8 @@
     "back": "Retour",
     "save": "Enregistrer",
     "name": "Nom",
-    "email": "Email"
+    "email": "Email",
+    "markAsRead": "Marquer comme lu"
   },
   "dashboard": {
     "title": "Tableau de bord",
@@ -50,10 +51,41 @@
     "title": "Évaluation de Conformité",
     "intro": "Veuillez répondre aux questions suivantes concernant votre conformité aux exigences de sécurité.",
     "question": "Question",
+    "questions": "Questions",
     "answer": "Réponse",
     "uploadProof": "Télécharger une preuve (optionnel)",
     "submitSuccess": "Merci ! Votre évaluation a été soumise avec succès.",
-    "submitted": "Évaluation soumise"
+    "submitted": "Évaluation soumise",
+    "awaitingValidation": "En attente de validation",
+    "validationMessage": "L'équipe sécurité examinera votre évaluation et vous informera du résultat.",
+    "checkStatus": "Vérifier le statut",
+    "closePage": "Vous pouvez fermer cette page. Vous recevrez une notification une fois l'évaluation validée.",
+    "statusTitle": "Statut de votre évaluation",
+    "submittedOn": "Soumis le",
+    "pendingMessage": "Votre évaluation est en cours d'examen par l'équipe sécurité. Vous serez notifié une fois la validation terminée.",
+    "resubmit": "Soumettre à nouveau",
+    "noAssessment": "Aucune évaluation trouvée",
+    "startAssessment": "Commencer l'évaluation",
+    "backToForm": "Retour au formulaire",
+    "emailNotification": "Notification par email",
+    "emailNotificationMessage": "Vous recevrez un email à l'adresse fournie lorsque l'équipe sécurité aura validé votre évaluation. Vérifiez votre boîte de réception (et les spams)."
+  },
+  "validation": {
+    "validationStatus": "Statut de validation",
+    "validationInfo": "Informations de validation",
+    "validateAssessment": "Valider l'évaluation",
+    "approve": "Approuver",
+    "reject": "Rejeter",
+    "requestClarification": "Demander des clarifications",
+    "validatedBy": "Validé par",
+    "validatedAt": "Date de validation",
+    "status": "Statut",
+    "comments": "Commentaires",
+    "commentsPlaceholder": "Commentaires (optionnel)",
+    "rejectReasonRequired": "Raison du rejet (requis)",
+    "rejectionReason": "Raison du rejet",
+    "clarificationRequest": "Décrivez les clarifications nécessaires",
+    "useCalculatedStatus": "Utiliser le statut calculé automatiquement"
   },
   "delete": {
     "confirm": "Êtes-vous sûr de vouloir supprimer ce fournisseur ?",

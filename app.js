@@ -1,13 +1,15 @@
+import 'dotenv/config';
 import express from 'express';
 import path from 'path';
 import multer from 'multer';
 import { fileURLToPath } from 'url';
-import { initDb, db } from './db.js';
+import { initDb, db, run as dbRun, get as dbGet, all as dbAll } from './db.js';
 import expressLayouts from 'express-ejs-layouts';
 import { customAlphabet } from 'nanoid';
 import fs from 'fs';
 import cookieParser from 'cookie-parser';
 import session from 'express-session';
+import { sendAssessmentNotification, testEmailConfig } from './email.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -119,21 +121,47 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// Questionnaire definition (5 exigences clés)
+// Questionnaire definition (9 questions organisées en 5 sections)
 const QUESTIONS_FR = [
-	{ id: 'av', text: "Antivirus à jour sur tous les postes", weight: 1 },
-	{ id: 'mfa', text: "Authentification multi-facteurs activée pour les accès sensibles", weight: 2 },
-	{ id: 'pra', text: "Plan de Reprise d'Activité (PRA) testé au moins annuellement", weight: 2 },
-	{ id: 'patch', text: "Gestion de correctifs régulière (OS et applicatifs)", weight: 1 },
-	{ id: 'backup', text: "Sauvegardes chiffrées et restaurations testées", weight: 2 }
+	// Section 1 : Authentification et Contrôle d'accès
+	{ id: 'mfa', section: 1, sectionTitle: "Authentification et Contrôle d'accès", text: "Votre organisation utilise-t-elle l'authentification multi-facteurs (MFA) pour tous les comptes accédant aux systèmes de l'entreprise ?", weight: 2 },
+	{ id: 'iam', section: 1, sectionTitle: "Authentification et Contrôle d'accès", text: "Disposez-vous d'un système de gestion des identités (IAM) pour contrôler les droits d'accès des utilisateurs ?", weight: 2 },
+	{ id: 'account_deactivation', section: 1, sectionTitle: "Authentification et Contrôle d'accès", text: "Les comptes utilisateurs sont-ils désactivés immédiatement après le départ d'un collaborateur ?", weight: 1 },
+	
+	// Section 2 : Sécurité des postes et serveurs
+	{ id: 'av_edr', section: 2, sectionTitle: "Sécurité des postes et serveurs", text: "Tous vos postes de travail et serveurs disposent-ils d'un antivirus ou EDR à jour ?", weight: 2 },
+	{ id: 'patches', section: 2, sectionTitle: "Sécurité des postes et serveurs", text: "Les mises à jour de sécurité (patchs) sont-elles appliquées régulièrement ?", weight: 2 },
+	
+	// Section 3 : Segmentation et isolation des environnements
+	{ id: 'network_segmentation', section: 3, sectionTitle: "Segmentation et isolation des environnements", text: "Votre réseau interne est-il segmenté pour isoler les environnements critiques ?", weight: 2 },
+	{ id: 'monitoring', section: 3, sectionTitle: "Segmentation et isolation des environnements", text: "Disposez-vous de mécanismes de supervision pour surveiller les accès et les flux réseau vers le client ?", weight: 2 },
+	
+	// Section 4 : Plan de Reprise d'Activité (PRA) et Continuité
+	{ id: 'pra', section: 4, sectionTitle: "Plan de Reprise d'Activité (PRA) et Continuité", text: "Disposez-vous d'un PRA documenté et validé par la direction ?", weight: 2 },
+	
+	// Section 5 : Surveillance, conformité et reporting
+	{ id: 'siem', section: 5, sectionTitle: "Surveillance, conformité et reporting", text: "Disposez-vous d'un système centralisé de journalisation (SIEM) pour collecter et analyser les logs de sécurité ?", weight: 2 }
 ];
 
 const QUESTIONS_EN = [
-	{ id: 'av', text: "Antivirus up to date on all workstations", weight: 1 },
-	{ id: 'mfa', text: "Multi-factor authentication enabled for sensitive access", weight: 2 },
-	{ id: 'pra', text: "Business Continuity Plan (BCP) tested at least annually", weight: 2 },
-	{ id: 'patch', text: "Regular patch management (OS and applications)", weight: 1 },
-	{ id: 'backup', text: "Encrypted backups and tested restorations", weight: 2 }
+	// Section 1 : Authentication and Access Control
+	{ id: 'mfa', section: 1, sectionTitle: "Authentication and Access Control", text: "Does your organization use multi-factor authentication (MFA) for all accounts accessing company systems?", weight: 2 },
+	{ id: 'iam', section: 1, sectionTitle: "Authentication and Access Control", text: "Do you have an Identity and Access Management (IAM) system to control user access rights?", weight: 2 },
+	{ id: 'account_deactivation', section: 1, sectionTitle: "Authentication and Access Control", text: "Are user accounts deactivated immediately after an employee leaves?", weight: 1 },
+	
+	// Section 2 : Workstation and Server Security
+	{ id: 'av_edr', section: 2, sectionTitle: "Workstation and Server Security", text: "Do all your workstations and servers have up-to-date antivirus or EDR?", weight: 2 },
+	{ id: 'patches', section: 2, sectionTitle: "Workstation and Server Security", text: "Are security updates (patches) applied regularly?", weight: 2 },
+	
+	// Section 3 : Segmentation and Environment Isolation
+	{ id: 'network_segmentation', section: 3, sectionTitle: "Segmentation and Environment Isolation", text: "Is your internal network segmented to isolate critical environments?", weight: 2 },
+	{ id: 'monitoring', section: 3, sectionTitle: "Segmentation and Environment Isolation", text: "Do you have monitoring mechanisms to supervise access and network flows to the client?", weight: 2 },
+	
+	// Section 4 : Business Continuity Plan (BCP) and Continuity
+	{ id: 'pra', section: 4, sectionTitle: "Business Continuity Plan (BCP) and Continuity", text: "Do you have a documented and management-approved Business Continuity Plan (BCP)?", weight: 2 },
+	
+	// Section 5 : Monitoring, Compliance and Reporting
+	{ id: 'siem', section: 5, sectionTitle: "Monitoring, Compliance and Reporting", text: "Do you have a centralized logging system (SIEM) to collect and analyze security logs?", weight: 2 }
 ];
 
 function getQuestions(lang) {
@@ -146,8 +174,19 @@ const STATUS = {
 	IN_PROGRESS: { fr: 'En cours', en: 'In Progress' }
 };
 
+const VALIDATION_STATUS = {
+	PENDING: { fr: 'En attente de validation', en: 'Pending validation' },
+	APPROVED: { fr: 'Approuvé', en: 'Approved' },
+	REJECTED: { fr: 'Rejeté', en: 'Rejected' },
+	NEEDS_CLARIFICATION: { fr: 'Clarifications demandées', en: 'Needs clarification' }
+};
+
 function getStatus(statusKey, lang) {
 	return STATUS[statusKey]?.[lang] || STATUS[statusKey]?.fr;
+}
+
+function getValidationStatus(statusKey, lang) {
+	return VALIDATION_STATUS[statusKey]?.[lang] || VALIDATION_STATUS[statusKey]?.fr || statusKey;
 }
 
 const nanoid = customAlphabet('123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz', 12);
@@ -247,7 +286,36 @@ app.get('/admin', requireAuth, async (req, res) => {
 			status: getStatus(statusKey, lang)
 		};
 	});
-	res.render('dashboard', { suppliers: suppliersWithStatus, STATUS, getStatus, lang, urlWithLang: res.locals.urlWithLang });
+	// Count pending assessments
+	const pendingCountResult = await dbGet(`SELECT COUNT(*) as count FROM assessments WHERE validation_status = 'PENDING' OR validation_status IS NULL`);
+	const pendingCount = pendingCountResult?.count || 0;
+	
+	// Check if notification has been marked as read
+	// Compare the current pending count with the count when it was marked as read
+	// If current count is greater than last read count, show notification (new assessments arrived)
+	const lastReadPendingCount = req.session.lastReadPendingCount || 0;
+	const notificationRead = (pendingCount <= lastReadPendingCount) || (pendingCount === 0);
+	
+	res.render('dashboard', { 
+		suppliers: suppliersWithStatus, 
+		STATUS, 
+		VALIDATION_STATUS,
+		getStatus, 
+		getValidationStatus,
+		pendingCount: pendingCount,
+		notificationRead: notificationRead,
+		lang, 
+		urlWithLang: res.locals.urlWithLang
+	});
+});
+
+// Route to mark notification as read
+app.post('/admin/notification/mark-read', requireAuth, async (req, res) => {
+	// Store the current pending count when marking as read
+	const pendingCountResult = await dbGet(`SELECT COUNT(*) as count FROM assessments WHERE validation_status = 'PENDING' OR validation_status IS NULL`);
+	const pendingCount = pendingCountResult?.count || 0;
+	req.session.lastReadPendingCount = pendingCount;
+	res.json({ success: true });
 });
 
 app.get('/supplier-space', (req, res) => {
@@ -297,7 +365,17 @@ app.get('/suppliers/:id', requireAuth, async (req, res) => {
 			status: getStatus(statusKey, lang)
 		};
 	});
-	res.render('supplier_detail', { supplier, assessments: assessmentsWithStatus, QUESTIONS: questions, lang, getStatus, urlWithLang: res.locals.urlWithLang });
+	res.render('supplier_detail', { 
+		supplier, 
+		assessments: assessmentsWithStatus, 
+		QUESTIONS: questions, 
+		STATUS,
+		VALIDATION_STATUS,
+		getStatus, 
+		getValidationStatus,
+		lang, 
+		urlWithLang: res.locals.urlWithLang 
+	});
 });
 
 app.post('/suppliers/:id/delete', requireAuth, async (req, res) => {
@@ -309,6 +387,106 @@ app.post('/suppliers/:id/delete', requireAuth, async (req, res) => {
 	// Puis le fournisseur
 	await dbRun(`DELETE FROM suppliers WHERE id = ?`, [req.params.id]);
 	res.redirect(`/admin?lang=${lang}`);
+});
+
+// Validation routes
+app.post('/assessments/:id/approve', requireAuth, async (req, res) => {
+	const lang = res.locals.lang;
+	const { comments, manual_status } = req.body;
+	const assessment = await dbGet(`SELECT * FROM assessments WHERE id = ?`, [req.params.id]);
+	if (!assessment) return res.status(404).send('Assessment not found');
+	
+	const finalStatus = manual_status && ['COMPLIANT', 'IN_PROGRESS', 'NON_COMPLIANT'].includes(manual_status) 
+		? manual_status 
+		: assessment.status;
+	
+	await dbRun(
+		`UPDATE assessments 
+		 SET validation_status = 'APPROVED', 
+		     validated_by = ?, 
+		     validated_at = CURRENT_TIMESTAMP,
+		     validation_comments = ?,
+		     status = ?,
+		     manual_status_override = ?
+		 WHERE id = ?`,
+		[req.session.username || 'admin', comments || null, finalStatus, manual_status || null, req.params.id]
+	);
+	
+	// Récupérer l'évaluation mise à jour et le fournisseur
+	const updatedAssessment = await dbGet(`SELECT * FROM assessments WHERE id = ?`, [req.params.id]);
+	const supplier = await dbGet(`SELECT * FROM suppliers WHERE id = ?`, [assessment.supplier_id]);
+	
+	// Envoyer l'email de notification
+	if (supplier && supplier.contact_email) {
+		await sendAssessmentNotification(supplier, updatedAssessment, 'APPROVED', lang);
+	}
+	
+	res.redirect(`/suppliers/${supplier.id}?lang=${lang}`);
+});
+
+app.post('/assessments/:id/reject', requireAuth, async (req, res) => {
+	const lang = res.locals.lang;
+	const { comments } = req.body;
+	if (!comments || comments.trim() === '') {
+		return res.status(400).send(lang === 'en' ? 'Comments are required for rejection' : 'Les commentaires sont requis pour le rejet');
+	}
+	
+	const assessment = await dbGet(`SELECT * FROM assessments WHERE id = ?`, [req.params.id]);
+	if (!assessment) return res.status(404).send('Assessment not found');
+	
+	await dbRun(
+		`UPDATE assessments 
+		 SET validation_status = 'REJECTED', 
+		     validated_by = ?, 
+		     validated_at = CURRENT_TIMESTAMP,
+		     validation_comments = ?,
+		     status = 'NON_COMPLIANT'
+		 WHERE id = ?`,
+		[req.session.username || 'admin', comments, req.params.id]
+	);
+	
+	// Récupérer l'évaluation mise à jour et le fournisseur
+	const updatedAssessment = await dbGet(`SELECT * FROM assessments WHERE id = ?`, [req.params.id]);
+	const supplier = await dbGet(`SELECT * FROM suppliers WHERE id = ?`, [assessment.supplier_id]);
+	
+	// Envoyer l'email de notification
+	if (supplier && supplier.contact_email) {
+		await sendAssessmentNotification(supplier, updatedAssessment, 'REJECTED', lang);
+	}
+	
+	res.redirect(`/suppliers/${supplier.id}?lang=${lang}`);
+});
+
+app.post('/assessments/:id/request-clarification', requireAuth, async (req, res) => {
+	const lang = res.locals.lang;
+	const { comments } = req.body;
+	if (!comments || comments.trim() === '') {
+		return res.status(400).send(lang === 'en' ? 'Comments are required' : 'Les commentaires sont requis');
+	}
+	
+	const assessment = await dbGet(`SELECT * FROM assessments WHERE id = ?`, [req.params.id]);
+	if (!assessment) return res.status(404).send('Assessment not found');
+	
+	await dbRun(
+		`UPDATE assessments 
+		 SET validation_status = 'NEEDS_CLARIFICATION', 
+		     validated_by = ?, 
+		     validated_at = CURRENT_TIMESTAMP,
+		     validation_comments = ?
+		 WHERE id = ?`,
+		[req.session.username || 'admin', comments, req.params.id]
+	);
+	
+	// Récupérer l'évaluation mise à jour et le fournisseur
+	const updatedAssessment = await dbGet(`SELECT * FROM assessments WHERE id = ?`, [req.params.id]);
+	const supplier = await dbGet(`SELECT * FROM suppliers WHERE id = ?`, [assessment.supplier_id]);
+	
+	// Envoyer l'email de notification
+	if (supplier && supplier.contact_email) {
+		await sendAssessmentNotification(supplier, updatedAssessment, 'NEEDS_CLARIFICATION', lang);
+	}
+	
+	res.redirect(`/suppliers/${supplier.id}?lang=${lang}`);
 });
 
 // Public invite link to fill assessment
@@ -331,18 +509,48 @@ app.get('/assessment/:token/success', async (req, res) => {
 	const lang = res.locals.lang;
 	const supplier = await dbGet(`SELECT * FROM suppliers WHERE invite_token = ?`, [req.params.token]);
 	if (!supplier) return res.status(404).send(lang === 'en' ? 'Invalid link' : 'Lien invalide');
-	const rawScore = Number(req.query.score);
-	const score = Number.isFinite(rawScore) ? Math.min(Math.max(Math.round(rawScore), 0), 100) : null;
-	const statusQuery = (req.query.status || '').toString().toUpperCase();
-	const allowedStatuses = ['COMPLIANT', 'IN_PROGRESS', 'NON_COMPLIANT'];
-	const statusKey = allowedStatuses.includes(statusQuery) ? statusQuery : null;
+	
+	res.render('assessment_success', { 
+		layout: 'public_layout', 
+		token: req.params.token,
+		lang, 
+		urlWithLang: res.locals.urlWithLang 
+	});
+});
 
-	if (score === null || statusKey === null) {
-		return res.redirect(`/assessment/${supplier.invite_token}?lang=${lang}`);
+// Route for supplier to check assessment status and see comments/clarifications
+app.get('/assessment/:token/status', async (req, res) => {
+	const lang = res.locals.lang;
+	const supplier = await dbGet(`SELECT * FROM suppliers WHERE invite_token = ?`, [req.params.token]);
+	if (!supplier) return res.status(404).send(lang === 'en' ? 'Invalid link' : 'Lien invalide');
+	
+	// Get the latest assessment
+	const assessment = await dbGet(`
+		SELECT * FROM assessments 
+		WHERE supplier_id = ? 
+		ORDER BY created_at DESC 
+		LIMIT 1
+	`, [supplier.id]);
+	
+	if (!assessment) {
+		return res.status(404).send(lang === 'en' ? 'No assessment found' : 'Aucune évaluation trouvée');
 	}
-
-	const statusText = getStatus(statusKey, lang);
-	res.render('assessment_success', { layout: 'public_layout', score, statusKey, statusText, lang, getStatus, urlWithLang: res.locals.urlWithLang });
+	
+	const validationStatus = assessment.validation_status || 'PENDING';
+	const validationStatusKey = ['PENDING', 'APPROVED', 'REJECTED', 'NEEDS_CLARIFICATION'].includes(validationStatus) 
+		? validationStatus 
+		: 'PENDING';
+	
+	res.render('assessment_status', { 
+		layout: 'public_layout', 
+		supplier,
+		assessment,
+		validationStatusKey,
+		VALIDATION_STATUS,
+		getValidationStatus,
+		lang, 
+		urlWithLang: res.locals.urlWithLang 
+	});
 });
 
 app.post('/assessment/:token', upload.fields([...QUESTIONS_FR, ...QUESTIONS_EN].map(q => ({ name: `${q.id}_file`, maxCount: 1 }))), async (req, res) => {
@@ -368,7 +576,7 @@ app.post('/assessment/:token', upload.fields([...QUESTIONS_FR, ...QUESTIONS_EN].
 	const statusText = getStatus(statusKey, lang);
 
 	await dbRun(
-		`INSERT INTO assessments (supplier_id, answers_json, proofs_json, score, status) VALUES (?, ?, ?, ?, ?)`,
+		`INSERT INTO assessments (supplier_id, answers_json, proofs_json, score, status, validation_status) VALUES (?, ?, ?, ?, ?, 'PENDING')`,
 		[supplier.id, JSON.stringify(answers), JSON.stringify(proofs), score, statusKey]
  	);
 
@@ -377,40 +585,23 @@ app.post('/assessment/:token', upload.fields([...QUESTIONS_FR, ...QUESTIONS_EN].
 		res.cookie('lang', lang, { maxAge: 365 * 24 * 60 * 60 * 1000 });
 	}
 	
-	const redirectUrl = `/assessment/${supplier.invite_token}/success?score=${encodeURIComponent(score)}&status=${encodeURIComponent(statusKey)}&lang=${lang}`;
+	// Redirect to success page without showing score
+	const redirectUrl = `/assessment/${supplier.invite_token}/success?lang=${lang}`;
 	res.redirect(redirectUrl);
 });
 
-// Helpers: promisified sqlite3
-function dbRun(sql, params = []) {
-	return new Promise((resolve, reject) => {
-		db.run(sql, params, function (err) {
-			if (err) return reject(err);
-			resolve(this);
-		});
- 	});
-}
+// Database functions (dbRun, dbGet, dbAll) are imported from db.js
 
-function dbGet(sql, params = []) {
-	return new Promise((resolve, reject) => {
-		db.get(sql, params, function (err, row) {
-			if (err) return reject(err);
-			resolve(row);
-		});
- 	});
-}
 
-function dbAll(sql, params = []) {
-	return new Promise((resolve, reject) => {
-		db.all(sql, params, function (err, rows) {
-			if (err) return reject(err);
-			resolve(rows);
-		});
- 	});
-}
 
 // Start
 await initDb();
+
+// Test email configuration on startup (non-blocking)
+testEmailConfig().catch(err => {
+	console.warn('⚠️  Email configuration test failed (emails may not work):', err.message);
+});
+
 app.listen(port, () => {
 	console.log(`VendorShield running at http://localhost:${port}`);
 });
