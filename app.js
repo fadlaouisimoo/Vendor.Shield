@@ -592,18 +592,32 @@ app.post('/assessment/:token', upload.fields([...QUESTIONS_FR, ...QUESTIONS_EN].
 
 // Database functions (dbRun, dbGet, dbAll) are imported from db.js
 
+// Initialize database and start server
+let serverInitialized = false;
 
+async function initializeServer() {
+	if (serverInitialized) return;
+	serverInitialized = true;
+	
+	await initDb();
 
-// Start
-await initDb();
+	// Test email configuration on startup (non-blocking)
+	testEmailConfig().catch(err => {
+		console.warn('⚠️  Email configuration test failed (emails may not work):', err.message);
+	});
+}
 
-// Test email configuration on startup (non-blocking)
-testEmailConfig().catch(err => {
-	console.warn('⚠️  Email configuration test failed (emails may not work):', err.message);
-});
+// Initialize server (for both local and Vercel)
+initializeServer().catch(console.error);
 
-app.listen(port, () => {
-	console.log(`VendorShield running at http://localhost:${port}`);
-});
+// Start server only if not on Vercel (Vercel handles the server)
+if (process.env.VERCEL !== '1') {
+	app.listen(port, () => {
+		console.log(`VendorShield running at http://localhost:${port}`);
+	});
+}
+
+// Export for Vercel serverless functions
+export default app;
 
 
