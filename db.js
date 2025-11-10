@@ -13,29 +13,54 @@ const TURSO_DB_AUTH_TOKEN = process.env.TURSO_DB_AUTH_TOKEN;
 // Create Turso client or fallback to local SQLite
 let db;
 let isTurso = false;
+let dbInitialized = false;
+let initPromise = null;
 
-if (TURSO_DB_URL && TURSO_DB_AUTH_TOKEN) {
-	// Production: Use Turso
-	db = createClient({
-		url: TURSO_DB_URL,
-		authToken: TURSO_DB_AUTH_TOKEN
-	});
-	isTurso = true;
-	console.log('✅ Connected to Turso database');
-} else {
-	// Development: Fallback to local SQLite if Turso not configured
-	console.warn('⚠️  Turso not configured, falling back to local SQLite');
-	const sqlite3 = (await import('sqlite3')).default;
-	const DB_PATH = path.join(__dirname, 'vendorshield.db');
-	sqlite3.verbose();
-	const { Database } = sqlite3;
-	db = new Database(DB_PATH);
-	isTurso = false;
-	console.log('✅ Connected to local SQLite database');
+// Initialize database connection (async to avoid top-level await issues)
+async function initializeDb() {
+	if (dbInitialized) return db;
+	if (initPromise) return initPromise;
+	
+	initPromise = (async () => {
+		try {
+			if (TURSO_DB_URL && TURSO_DB_AUTH_TOKEN) {
+				// Production: Use Turso
+				db = createClient({
+					url: TURSO_DB_URL,
+					authToken: TURSO_DB_AUTH_TOKEN
+				});
+				isTurso = true;
+				console.log('✅ Connected to Turso database');
+			} else {
+				// Development: Fallback to local SQLite if Turso not configured
+				// On Vercel, we should always use Turso
+				if (process.env.VERCEL === '1') {
+					throw new Error('Turso configuration required on Vercel. Please set TURSO_DB_URL and TURSO_DB_AUTH_TOKEN environment variables.');
+				}
+				console.warn('⚠️  Turso not configured, falling back to local SQLite');
+				const sqlite3Module = await import('sqlite3');
+				const sqlite3 = sqlite3Module.default;
+				const DB_PATH = path.join(__dirname, 'vendorshield.db');
+				sqlite3.verbose();
+				const { Database } = sqlite3;
+				db = new Database(DB_PATH);
+				isTurso = false;
+				console.log('✅ Connected to local SQLite database');
+			}
+			dbInitialized = true;
+			return db;
+		} catch (error) {
+			console.error('Database initialization error:', error);
+			throw error;
+		}
+	})();
+	
+	return initPromise;
 }
 
 // Database helper functions (compatible with both Turso and sqlite3)
 export async function run(sql, params = []) {
+	await initializeDb();
 	if (isTurso) {
 		await db.execute(sql, params);
 		return { lastID: 0, changes: 0 };
@@ -50,10 +75,11 @@ export async function run(sql, params = []) {
 }
 
 export async function get(sql, params = []) {
+	await initializeDb();
 	if (isTurso) {
 		const result = await db.execute(sql, params);
+		// Convert Turso row objects to plain objects
 		if (result.rows.length > 0) {
-			// Convert Turso row to plain object
 			const row = result.rows[0];
 			const obj = {};
 			for (const [key, value] of Object.entries(row)) {
@@ -73,9 +99,10 @@ export async function get(sql, params = []) {
 }
 
 export async function all(sql, params = []) {
+	await initializeDb();
 	if (isTurso) {
 		const result = await db.execute(sql, params);
-		// Convert Turso rows to plain objects
+		// Convert Turso row objects to plain objects
 		return result.rows.map(row => {
 			const obj = {};
 			for (const [key, value] of Object.entries(row)) {
@@ -94,6 +121,7 @@ export async function all(sql, params = []) {
 }
 
 export async function initDb() {
+	await initializeDb();
 	await ensureUploadsDir();
 	
 	// PRAGMA is not supported in Turso, skip it
@@ -129,8 +157,9 @@ export async function initDb() {
 
 async function addColumnIfNotExists(tableName, columnName, columnDefinition) {
 	try {
+		await initializeDb();
 		if (isTurso) {
-			// For Turso, use pragma_table_info function
+			// For Turso, try to get table info using pragma_table_info
 			const result = await db.execute(`SELECT name FROM pragma_table_info('${tableName}') WHERE name = ?`, [columnName]);
 			const columnExists = result.rows.length > 0;
 			if (!columnExists) {
@@ -152,6 +181,10 @@ async function addColumnIfNotExists(tableName, columnName, columnDefinition) {
 
 function ensureUploadsDir() {
 	return new Promise((resolve, reject) => {
+		// On Vercel, we don't need to create uploads dir (files stored in DB)
+		if (process.env.VERCEL === '1') {
+			return resolve();
+		}
 		const uploads = path.join(__dirname, 'uploads');
 		fs.mkdir(uploads, { recursive: true }, (err) => {
 			if (err) return reject(err);
@@ -161,4 +194,5 @@ function ensureUploadsDir() {
 }
 
 // Export db for backward compatibility (but prefer using run/get/all functions)
+// Note: db might not be initialized immediately, use initializeDb() first
 export { db };

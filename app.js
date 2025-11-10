@@ -134,6 +134,50 @@ if (!isVercelEnv) {
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
+// Initialize database early (non-blocking)
+let serverInitialized = false;
+let initPromise = null;
+
+async function initializeServer() {
+	if (serverInitialized) return;
+	if (initPromise) return initPromise;
+	
+	initPromise = (async () => {
+		try {
+			await initDb();
+			console.log('✅ Database initialized');
+			
+			// Test email configuration on startup (non-blocking)
+			testEmailConfig().catch(err => {
+				console.warn('⚠️  Email configuration test failed (emails may not work):', err.message);
+			});
+			
+			serverInitialized = true;
+		} catch (error) {
+			console.error('❌ Failed to initialize server:', error);
+			throw error;
+		}
+	})();
+	
+	return initPromise;
+}
+
+// Start initialization (non-blocking)
+initializeServer().catch(err => {
+	console.error('Initialization error:', err);
+});
+
+// Middleware to ensure database is initialized before handling requests
+app.use(async (req, res, next) => {
+	try {
+		await initializeServer();
+		next();
+	} catch (error) {
+		console.error('Database initialization error:', error);
+		res.status(500).send('Server initialization error. Please check logs.');
+	}
+});
+
 // Authentication middleware (supports both session and cookie-based auth for Vercel)
 const requireAuth = (req, res, next) => {
 	// Check session-based auth (for local development)
@@ -742,24 +786,6 @@ app.post('/assessment/:token', upload.fields([...QUESTIONS_FR, ...QUESTIONS_EN].
 });
 
 // Database functions (dbRun, dbGet, dbAll) are imported from db.js
-
-// Initialize database and start server
-let serverInitialized = false;
-
-async function initializeServer() {
-	if (serverInitialized) return;
-	serverInitialized = true;
-	
-	await initDb();
-
-	// Test email configuration on startup (non-blocking)
-	testEmailConfig().catch(err => {
-		console.warn('⚠️  Email configuration test failed (emails may not work):', err.message);
-	});
-}
-
-// Initialize server (for both local and Vercel)
-initializeServer().catch(console.error);
 
 // Start server only if not on Vercel (Vercel handles the server)
 if (process.env.VERCEL !== '1') {
