@@ -11,9 +11,13 @@ import cookieParser from 'cookie-parser';
 import session from 'express-session';
 import crypto from 'crypto';
 import { sendAssessmentNotification, testEmailConfig } from './email.js';
+import { uploadToCloudinary, isCloudinaryConfigured } from './cloudinary.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Environment detection (must be defined early)
+const isVercelEnv = process.env.VERCEL === '1';
 
 // Load translations
 const translations = {
@@ -214,17 +218,24 @@ app.use((req, res, next) => {
 });
 
 // File uploads
-// On Vercel, use memory storage and store files in database (base64)
-// On local, use disk storage
-const isVercelEnv = process.env.VERCEL === '1';
+// Priority: Cloudinary > Local disk storage
+const useCloudinary = isCloudinaryConfigured();
 
 let upload;
-if (isVercelEnv) {
-	// Vercel: Store files in memory, then save to database as base64
+if (useCloudinary) {
+	// Use Cloudinary: Store files in memory, then upload to Cloudinary
 	upload = multer({ 
 		storage: multer.memoryStorage(),
 		limits: { fileSize: 10 * 1024 * 1024 } // 10MB max
 	});
+	console.log('✅ Using Cloudinary for file storage');
+} else if (isVercelEnv) {
+	// Vercel without Cloudinary: Store files in memory, then save to database as base64 (fallback)
+	upload = multer({ 
+		storage: multer.memoryStorage(),
+		limits: { fileSize: 10 * 1024 * 1024 } // 10MB max
+	});
+	console.warn('⚠️  Cloudinary not configured. Using base64 storage (not recommended for production)');
 } else {
 	// Local: Store files on disk
 	const storage = multer.diskStorage({
@@ -238,6 +249,7 @@ if (isVercelEnv) {
 		}
 	});
 	upload = multer({ storage });
+	console.log('✅ Using local disk storage');
 }
 
 // Questionnaire definition (9 questions organisées en 5 sections)
@@ -650,7 +662,7 @@ app.get('/invite/:token', async (req, res) => {
 	res.redirect(`/assessment/${supplier.invite_token}?lang=${lang}`);
 });
 
-// Route to serve proof files (for base64 files stored in database)
+// Route to serve proof files (redirects to Cloudinary URL or serves base64/local files)
 app.get('/proof/:assessmentId/:questionId', requireAuth, async (req, res) => {
 	try {
 		const assessment = await dbGet(`SELECT proofs_json FROM assessments WHERE id = ?`, [req.params.assessmentId]);
@@ -661,9 +673,15 @@ app.get('/proof/:assessmentId/:questionId', requireAuth, async (req, res) => {
 		
 		if (!proof) return res.status(404).send('Proof not found');
 		
-		// Check if it's a base64 data URL (Vercel) or file path (local)
+		// Check if it's a Cloudinary URL (starts with https://res.cloudinary.com)
+		if (proof.startsWith('https://res.cloudinary.com') || proof.startsWith('http://res.cloudinary.com')) {
+			// Redirect to Cloudinary URL
+			return res.redirect(proof);
+		}
+		
+		// Check if it's a base64 data URL (fallback for Vercel without Cloudinary)
 		if (proof.startsWith('data:')) {
-			// Base64 file from Vercel
+			// Base64 file from Vercel (fallback)
 			const [header, base64Data] = proof.split(',');
 			const mimeMatch = header.match(/data:([^;]+)/);
 			const mimeType = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
@@ -671,11 +689,20 @@ app.get('/proof/:assessmentId/:questionId', requireAuth, async (req, res) => {
 			const buffer = Buffer.from(base64Data, 'base64');
 			res.setHeader('Content-Type', mimeType);
 			res.setHeader('Content-Disposition', 'inline');
-			res.send(buffer);
-		} else {
-			// File path (local) - redirect or serve file
-			res.redirect(proof);
+			return res.send(buffer);
 		}
+		
+		// File path (local) - redirect or serve file
+		if (proof.startsWith('/uploads/')) {
+			return res.redirect(proof);
+		}
+		
+		// If it's already a full URL, redirect to it
+		if (proof.startsWith('http://') || proof.startsWith('https://')) {
+			return res.redirect(proof);
+		}
+		
+		return res.status(404).send('Invalid proof format');
 	} catch (error) {
 		console.error('Error serving proof:', error);
 		res.status(500).send('Error serving proof');
@@ -752,16 +779,26 @@ app.post('/assessment/:token', upload.fields([...QUESTIONS_FR, ...QUESTIONS_EN].
 		answers[q.id] = req.body[q.id];
 		const files = req.files?.[`${q.id}_file`];
 		if (files && files[0]) {
-			if (isVercelEnv) {
-				// Vercel: Store file as base64 in database
-				const fileBuffer = files[0].buffer;
-				const base64 = fileBuffer.toString('base64');
-				const mimeType = files[0].mimetype || 'application/octet-stream';
-				const fileName = files[0].originalname || 'file';
-				proofs[q.id] = `data:${mimeType};base64,${base64}`;
-			} else {
-				// Local: Store file path
-				proofs[q.id] = `/uploads/${files[0].filename}`;
+			try {
+				if (useCloudinary) {
+					// Upload to Cloudinary
+					const fileBuffer = files[0].buffer;
+					const originalName = files[0].originalname || 'file';
+					const uploadResult = await uploadToCloudinary(fileBuffer, originalName, `vendorshield/proofs/${supplier.id}`);
+					proofs[q.id] = uploadResult.url; // Store Cloudinary URL
+				} else if (isVercelEnv) {
+					// Vercel without Cloudinary: Store file as base64 in database (fallback)
+					const fileBuffer = files[0].buffer;
+					const base64 = fileBuffer.toString('base64');
+					const mimeType = files[0].mimetype || 'application/octet-stream';
+					proofs[q.id] = `data:${mimeType};base64,${base64}`;
+				} else {
+					// Local: Store file path
+					proofs[q.id] = `/uploads/${files[0].filename}`;
+				}
+			} catch (error) {
+				console.error(`Error uploading file for question ${q.id}:`, error);
+				// Continue without the proof if upload fails
 			}
 		}
 	}

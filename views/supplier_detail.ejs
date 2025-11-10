@@ -191,9 +191,26 @@
 										<% } %>
 										<% if (proofs[q.id]) { %>
 											<% 
-											// Check if it's a base64 data URL (Vercel) or file path (local)
-											const isBase64 = proofs[q.id].startsWith('data:');
-											const proofUrl = isBase64 ? urlWithLang(`/proof/${a.id}/${q.id}`) : proofs[q.id];
+											// Check the type of proof URL
+											const proof = proofs[q.id];
+											let proofUrl;
+											
+											if (proof.startsWith('https://res.cloudinary.com') || proof.startsWith('http://res.cloudinary.com')) {
+												// Cloudinary URL - use directly
+												proofUrl = proof;
+											} else if (proof.startsWith('data:')) {
+												// Base64 data URL (fallback) - use proxy route
+												proofUrl = urlWithLang(`/proof/${a.id}/${q.id}`);
+											} else if (proof.startsWith('/uploads/')) {
+												// Local file path
+												proofUrl = proof;
+											} else if (proof.startsWith('http://') || proof.startsWith('https://')) {
+												// Full URL
+												proofUrl = proof;
+											} else {
+												// Fallback to proxy route
+												proofUrl = urlWithLang(`/proof/${a.id}/${q.id}`);
+											}
 											%>
 											<a href="<%= proofUrl %>" target="_blank" class="proof-link">
 												<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
