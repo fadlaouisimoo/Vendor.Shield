@@ -37,6 +37,15 @@ const port = process.env.PORT || 3000;
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 
+// Log admin config (without password) for debugging
+if (process.env.VERCEL === '1') {
+	console.log('Admin config:', { 
+		username: ADMIN_USERNAME, 
+		hasPassword: !!ADMIN_PASSWORD,
+		hasSessionSecret: !!process.env.SESSION_SECRET 
+	});
+}
+
 // Views & static
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -47,21 +56,29 @@ app.set('layout', 'layout');
 const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
 const isVercel = process.env.VERCEL === '1';
 
-app.use(session({
+const sessionConfig = {
 	secret: process.env.SESSION_SECRET || 'vendorshield-secret-key-change-in-production',
 	name: 'vendorshield.sid', // Explicit session cookie name
-	resave: false,
+	resave: true, // Changed to true for Vercel (helps with serverless)
 	saveUninitialized: false,
 	cookie: {
 		secure: isProduction, // HTTPS only in production/Vercel
 		httpOnly: true,
 		maxAge: 24 * 60 * 60 * 1000, // 24 hours
 		sameSite: isVercel ? 'none' : 'lax', // Required for Vercel (cross-origin)
-		domain: isVercel ? undefined : undefined // Let browser set domain automatically
-	},
-	// On Vercel, sessions are stored in memory per instance (limitation)
-	// For production, consider using external session store (Redis, etc.)
-}));
+		domain: undefined // Let browser set domain automatically
+	}
+};
+
+if (isVercel) {
+	console.log('Session config for Vercel:', {
+		secure: sessionConfig.cookie.secure,
+		sameSite: sessionConfig.cookie.sameSite,
+		hasSecret: !!sessionConfig.secret
+	});
+}
+
+app.use(session(sessionConfig));
 
 // Cookie parser must be before language middleware
 app.use(cookieParser());
@@ -101,12 +118,21 @@ app.use(express.json());
 
 // Authentication middleware
 const requireAuth = (req, res, next) => {
+	console.log('requireAuth check:', { 
+		hasSession: !!req.session, 
+		isAuthenticated: req.session?.isAuthenticated,
+		path: req.originalUrl 
+	});
+	
 	if (req.session && req.session.isAuthenticated) {
 		return next();
 	}
 	// Store the original URL to redirect after login
-	req.session.returnTo = req.originalUrl;
+	if (req.session) {
+		req.session.returnTo = req.originalUrl;
+	}
 	const lang = res.locals.lang || 'fr';
+	console.log('Redirecting to login');
 	res.redirect(`/login?lang=${lang}`);
 };
 
@@ -237,24 +263,38 @@ app.post('/login', (req, res) => {
 	const lang = res.locals.lang;
 	const { username, password } = req.body;
 	
+	console.log('Login attempt:', { username, providedPassword: password ? '***' : 'empty', expectedUser: ADMIN_USERNAME });
+	
 	if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+		// Ensure session exists
+		if (!req.session) {
+			console.error('Session not available');
+			return res.status(500).send('Session not available');
+		}
+		
 		req.session.isAuthenticated = true;
 		req.session.username = username;
+		
+		console.log('Session set:', { isAuthenticated: req.session.isAuthenticated, username: req.session.username });
 		
 		// Save session explicitly (important for Vercel/serverless)
 		req.session.save((err) => {
 			if (err) {
 				console.error('Session save error:', err);
-				return res.status(500).send('Session error');
+				return res.status(500).send('Session error: ' + err.message);
 			}
+			
+			console.log('Session saved successfully');
 			
 			// Redirect to returnTo URL or admin dashboard
 			const returnTo = req.session.returnTo || '/admin';
 			delete req.session.returnTo;
 			const separator = returnTo.includes('?') ? '&' : '?';
+			console.log('Redirecting to:', `${returnTo}${separator}lang=${lang}`);
 			res.redirect(`${returnTo}${separator}lang=${lang}`);
 		});
 	} else {
+		console.log('Invalid credentials');
 		res.render('login', { 
 			layout: 'public_layout', 
 			lang, 
