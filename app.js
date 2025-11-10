@@ -126,7 +126,10 @@ app.use((req, res, next) => {
 });
 
 app.use('/public', express.static(path.join(__dirname, 'public')));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Only serve /uploads on local (not Vercel)
+if (!isVercelEnv) {
+	app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+}
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -167,17 +170,31 @@ app.use((req, res, next) => {
 });
 
 // File uploads
-const storage = multer.diskStorage({
-	destination: function (req, file, cb) {
-		cb(null, path.join(__dirname, 'uploads'));
-	},
-	filename: function (req, file, cb) {
-		const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-		const safeName = file.originalname.replace(/[^a-zA-Z0-9_.-]/g, '_');
-		cb(null, uniqueSuffix + '-' + safeName);
-	}
-});
-const upload = multer({ storage });
+// On Vercel, use memory storage and store files in database (base64)
+// On local, use disk storage
+const isVercelEnv = process.env.VERCEL === '1';
+
+let upload;
+if (isVercelEnv) {
+	// Vercel: Store files in memory, then save to database as base64
+	upload = multer({ 
+		storage: multer.memoryStorage(),
+		limits: { fileSize: 10 * 1024 * 1024 } // 10MB max
+	});
+} else {
+	// Local: Store files on disk
+	const storage = multer.diskStorage({
+		destination: function (req, file, cb) {
+			cb(null, path.join(__dirname, 'uploads'));
+		},
+		filename: function (req, file, cb) {
+			const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+			const safeName = file.originalname.replace(/[^a-zA-Z0-9_.-]/g, '_');
+			cb(null, uniqueSuffix + '-' + safeName);
+		}
+	});
+	upload = multer({ storage });
+}
 
 // Questionnaire definition (9 questions organisées en 5 sections)
 const QUESTIONS_FR = [
@@ -589,6 +606,38 @@ app.get('/invite/:token', async (req, res) => {
 	res.redirect(`/assessment/${supplier.invite_token}?lang=${lang}`);
 });
 
+// Route to serve proof files (for base64 files stored in database)
+app.get('/proof/:assessmentId/:questionId', requireAuth, async (req, res) => {
+	try {
+		const assessment = await dbGet(`SELECT proofs_json FROM assessments WHERE id = ?`, [req.params.assessmentId]);
+		if (!assessment) return res.status(404).send('Assessment not found');
+		
+		const proofs = JSON.parse(assessment.proofs_json || '{}');
+		const proof = proofs[req.params.questionId];
+		
+		if (!proof) return res.status(404).send('Proof not found');
+		
+		// Check if it's a base64 data URL (Vercel) or file path (local)
+		if (proof.startsWith('data:')) {
+			// Base64 file from Vercel
+			const [header, base64Data] = proof.split(',');
+			const mimeMatch = header.match(/data:([^;]+)/);
+			const mimeType = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
+			
+			const buffer = Buffer.from(base64Data, 'base64');
+			res.setHeader('Content-Type', mimeType);
+			res.setHeader('Content-Disposition', 'inline');
+			res.send(buffer);
+		} else {
+			// File path (local) - redirect or serve file
+			res.redirect(proof);
+		}
+	} catch (error) {
+		console.error('Error serving proof:', error);
+		res.status(500).send('Error serving proof');
+	}
+});
+
 app.get('/assessment/:token', async (req, res) => {
 	const lang = res.locals.lang;
 	const supplier = await dbGet(`SELECT * FROM suppliers WHERE invite_token = ?`, [req.params.token]);
@@ -659,7 +708,17 @@ app.post('/assessment/:token', upload.fields([...QUESTIONS_FR, ...QUESTIONS_EN].
 		answers[q.id] = req.body[q.id];
 		const files = req.files?.[`${q.id}_file`];
 		if (files && files[0]) {
-			proofs[q.id] = `/uploads/${files[0].filename}`;
+			if (isVercelEnv) {
+				// Vercel: Store file as base64 in database
+				const fileBuffer = files[0].buffer;
+				const base64 = fileBuffer.toString('base64');
+				const mimeType = files[0].mimetype || 'application/octet-stream';
+				const fileName = files[0].originalname || 'file';
+				proofs[q.id] = `data:${mimeType};base64,${base64}`;
+			} else {
+				// Local: Store file path
+				proofs[q.id] = `/uploads/${files[0].filename}`;
+			}
 		}
 	}
 
