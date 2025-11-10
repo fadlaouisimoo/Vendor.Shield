@@ -44,15 +44,23 @@ app.use(expressLayouts);
 app.set('layout', 'layout');
 
 // Session configuration
+const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
+const isVercel = process.env.VERCEL === '1';
+
 app.use(session({
 	secret: process.env.SESSION_SECRET || 'vendorshield-secret-key-change-in-production',
+	name: 'vendorshield.sid', // Explicit session cookie name
 	resave: false,
 	saveUninitialized: false,
 	cookie: {
-		secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+		secure: isProduction, // HTTPS only in production/Vercel
 		httpOnly: true,
-		maxAge: 24 * 60 * 60 * 1000 // 24 hours
-	}
+		maxAge: 24 * 60 * 60 * 1000, // 24 hours
+		sameSite: isVercel ? 'none' : 'lax', // Required for Vercel (cross-origin)
+		domain: isVercel ? undefined : undefined // Let browser set domain automatically
+	},
+	// On Vercel, sessions are stored in memory per instance (limitation)
+	// For production, consider using external session store (Redis, etc.)
 }));
 
 // Cookie parser must be before language middleware
@@ -232,11 +240,20 @@ app.post('/login', (req, res) => {
 	if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
 		req.session.isAuthenticated = true;
 		req.session.username = username;
-		// Redirect to returnTo URL or admin dashboard
-		const returnTo = req.session.returnTo || '/admin';
-		delete req.session.returnTo;
-		const separator = returnTo.includes('?') ? '&' : '?';
-		res.redirect(`${returnTo}${separator}lang=${lang}`);
+		
+		// Save session explicitly (important for Vercel/serverless)
+		req.session.save((err) => {
+			if (err) {
+				console.error('Session save error:', err);
+				return res.status(500).send('Session error');
+			}
+			
+			// Redirect to returnTo URL or admin dashboard
+			const returnTo = req.session.returnTo || '/admin';
+			delete req.session.returnTo;
+			const separator = returnTo.includes('?') ? '&' : '?';
+			res.redirect(`${returnTo}${separator}lang=${lang}`);
+		});
 	} else {
 		res.render('login', { 
 			layout: 'public_layout', 
