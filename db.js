@@ -16,6 +16,39 @@ let isTurso = false;
 let dbInitialized = false;
 let initPromise = null;
 
+// Retry helper with exponential backoff
+async function retryWithBackoff(fn, maxRetries = 3, baseDelay = 1000) {
+	for (let attempt = 0; attempt < maxRetries; attempt++) {
+		try {
+			return await fn();
+		} catch (error) {
+			const isLastAttempt = attempt === maxRetries - 1;
+			const isTimeoutError = error.code === 'ETIMEDOUT' || 
+				error.message?.includes('ETIMEDOUT') || 
+				error.message?.includes('fetch failed') ||
+				error.cause?.code === 'ETIMEDOUT';
+			
+			if (isLastAttempt || !isTimeoutError) {
+				throw error;
+			}
+			
+			const delay = baseDelay * Math.pow(2, attempt);
+			console.warn(`⚠️  Database connection attempt ${attempt + 1} failed, retrying in ${delay}ms...`);
+			await new Promise(resolve => setTimeout(resolve, delay));
+		}
+	}
+}
+
+// Test database connection
+async function testConnection(client) {
+	try {
+		await client.execute('SELECT 1');
+		return true;
+	} catch (error) {
+		return false;
+	}
+}
+
 // Initialize database connection (async to avoid top-level await issues)
 async function initializeDb() {
 	if (dbInitialized) return db;
@@ -24,13 +57,22 @@ async function initializeDb() {
 	initPromise = (async () => {
 		try {
 			if (TURSO_DB_URL && TURSO_DB_AUTH_TOKEN) {
-				// Production: Use Turso
-				db = createClient({
-					url: TURSO_DB_URL,
-					authToken: TURSO_DB_AUTH_TOKEN
-				});
-				isTurso = true;
-				console.log('✅ Connected to Turso database');
+				// Production: Use Turso with retry logic
+				await retryWithBackoff(async () => {
+					db = createClient({
+						url: TURSO_DB_URL,
+						authToken: TURSO_DB_AUTH_TOKEN
+					});
+					
+					// Test the connection before marking as initialized
+					const connected = await testConnection(db);
+					if (!connected) {
+						throw new Error('Connection test failed');
+					}
+					
+					isTurso = true;
+					console.log('✅ Connected to Turso database');
+				}, 3, 1000); // 3 retries, starting with 1 second delay
 			} else {
 				// Development: Fallback to local SQLite if Turso not configured
 				// On Vercel, we should always use Turso
@@ -51,6 +93,9 @@ async function initializeDb() {
 			return db;
 		} catch (error) {
 			console.error('Database initialization error:', error);
+			// Reset state on error so we can retry
+			dbInitialized = false;
+			initPromise = null;
 			throw error;
 		}
 	})();
@@ -59,11 +104,21 @@ async function initializeDb() {
 }
 
 // Database helper functions (compatible with both Turso and sqlite3)
+// Wrapper with retry logic for Turso operations
+async function executeWithRetry(operation, maxRetries = 2) {
+	return await retryWithBackoff(async () => {
+		await initializeDb();
+		return await operation();
+	}, maxRetries, 500);
+}
+
 export async function run(sql, params = []) {
 	await initializeDb();
 	if (isTurso) {
-		await db.execute(sql, params);
-		return { lastID: 0, changes: 0 };
+		return await executeWithRetry(async () => {
+			await db.execute(sql, params);
+			return { lastID: 0, changes: 0 };
+		});
 	} else {
 		return new Promise((resolve, reject) => {
 			db.run(sql, params, function (err) {
@@ -77,17 +132,19 @@ export async function run(sql, params = []) {
 export async function get(sql, params = []) {
 	await initializeDb();
 	if (isTurso) {
-		const result = await db.execute(sql, params);
-		// Convert Turso row objects to plain objects
-		if (result.rows.length > 0) {
-			const row = result.rows[0];
-			const obj = {};
-			for (const [key, value] of Object.entries(row)) {
-				obj[key] = value;
+		return await executeWithRetry(async () => {
+			const result = await db.execute(sql, params);
+			// Convert Turso row objects to plain objects
+			if (result.rows.length > 0) {
+				const row = result.rows[0];
+				const obj = {};
+				for (const [key, value] of Object.entries(row)) {
+					obj[key] = value;
+				}
+				return obj;
 			}
-			return obj;
-		}
-		return null;
+			return null;
+		});
 	} else {
 		return new Promise((resolve, reject) => {
 			db.get(sql, params, (err, row) => {
@@ -101,14 +158,16 @@ export async function get(sql, params = []) {
 export async function all(sql, params = []) {
 	await initializeDb();
 	if (isTurso) {
-		const result = await db.execute(sql, params);
-		// Convert Turso row objects to plain objects
-		return result.rows.map(row => {
-			const obj = {};
-			for (const [key, value] of Object.entries(row)) {
-				obj[key] = value;
-			}
-			return obj;
+		return await executeWithRetry(async () => {
+			const result = await db.execute(sql, params);
+			// Convert Turso row objects to plain objects
+			return result.rows.map(row => {
+				const obj = {};
+				for (const [key, value] of Object.entries(row)) {
+					obj[key] = value;
+				}
+				return obj;
+			});
 		});
 	} else {
 		return new Promise((resolve, reject) => {
