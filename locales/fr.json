@@ -38,6 +38,7 @@
     "title": "Tableau de bord",
     "totalSuppliers": "Total Fournisseurs",
     "averageScore": "Score Moyen",
+    "averageComplianceTime": "Délai moyen de mise en conformité",
     "compliantSuppliers": "Fournisseurs Conformes",
     "addSupplier": "Ajouter un fournisseur"
   },

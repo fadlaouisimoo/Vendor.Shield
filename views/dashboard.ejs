@@ -105,10 +105,12 @@
 		</div>
 	</div>
 	<div class="kpi">
-		<div class="kpi-label"><%= lang === 'en' ? 'Average Score' : 'Moyenne des scores' %></div>
+		<div class="kpi-label"><%= lang === 'en' ? 'Average Compliance Time' : 'Délai moyen de mise en conformité' %></div>
 		<div class="kpi-value">
-			<% const avg = (suppliers || []).length ? Math.round((suppliers.reduce((a,b)=>a+(b.score||0),0)/(suppliers.length))) : 0; %>
-			<%= avg %>%
+			<%= typeof averageComplianceDays !== 'undefined' && averageComplianceDays > 0 ? averageComplianceDays : '-' %>
+			<% if (typeof averageComplianceDays !== 'undefined' && averageComplianceDays > 0) { %>
+				<span style="font-size:14px;font-weight:400;opacity:0.7"><%= lang === 'en' ? 'days' : 'jours' %></span>
+			<% } %>
 		</div>
 	</div>
 	<div class="kpi" style="<%= pendingCount > 0 ? 'border-color: #f59e0b; box-shadow: 0 0 0 2px rgba(245,158,11,0.2)' : '' %>">
@@ -116,6 +118,27 @@
 		<div class="kpi-value" style="<%= pendingCount > 0 ? 'color: #f59e0b' : '' %>">
 			<%= pendingCount || 0 %>
 		</div>
+	</div>
+</section>
+
+<!-- Charts Section -->
+<section class="charts-section" style="margin-top:32px;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px">
+	<!-- Compliance Status Chart -->
+	<div class="chart-container" style="background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01));border:1px solid var(--border);border-radius:14px;padding:20px">
+		<h3 style="margin:0 0 16px 0;font-size:16px;color:var(--text)"><%= lang === 'en' ? 'Compliance Status Distribution' : 'Répartition des statuts de conformité' %></h3>
+		<canvas id="statusChart" style="max-height:300px"></canvas>
+	</div>
+	
+	<!-- Compliance Percentage Chart -->
+	<div class="chart-container" style="background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01));border:1px solid var(--border);border-radius:14px;padding:20px">
+		<h3 style="margin:0 0 16px 0;font-size:16px;color:var(--text)"><%= lang === 'en' ? 'Compliance Rate' : 'Taux de conformité' %></h3>
+		<canvas id="complianceChart" style="max-height:300px"></canvas>
+	</div>
+	
+	<!-- Risks Chart -->
+	<div class="chart-container" style="background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01));border:1px solid var(--border);border-radius:14px;padding:20px">
+		<h3 style="margin:0 0 16px 0;font-size:16px;color:var(--text)"><%= lang === 'en' ? 'Risk Overview' : 'Vue d\'ensemble des risques' %></h3>
+		<canvas id="risksChart" style="max-height:300px"></canvas>
 	</div>
 </section>
 
@@ -163,6 +186,217 @@ document.addEventListener('DOMContentLoaded', function() {
 				markReadBtn.style.cursor = 'pointer';
 				console.error('Error:', error);
 				alert('<%= lang === "en" ? "Error marking as read" : "Erreur lors du marquage comme lu" %>');
+			}
+		});
+	}
+	
+	// Chart.js configuration
+	const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+	const textColor = isDark ? '#e6edff' : '#1e293b';
+	const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+	
+	// Chart data from server
+	const chartData = {
+		compliantCount: <%= compliantCount || 0 %>,
+		inProgressCount: <%= inProgressCount || 0 %>,
+		nonCompliantCount: <%= nonCompliantCount || 0 %>,
+		pendingCount: <%= pendingCount || 0 %>,
+		compliantPercentage: <%= compliantPercentage || 0 %>,
+		totalSuppliers: <%= totalSuppliers || 0 %>
+	};
+	
+	// Status Distribution Chart (Doughnut)
+	const statusCtx = document.getElementById('statusChart');
+	if (statusCtx) {
+		new Chart(statusCtx, {
+			type: 'doughnut',
+			data: {
+				labels: [
+					'<%= lang === "en" ? "Compliant" : "Conformes" %>',
+					'<%= lang === "en" ? "In Progress" : "En cours" %>',
+					'<%= lang === "en" ? "Non-Compliant" : "Non conformes" %>',
+					'<%= lang === "en" ? "Pending" : "En attente" %>'
+				],
+				datasets: [{
+					data: [
+						chartData.compliantCount,
+						chartData.inProgressCount,
+						chartData.nonCompliantCount,
+						chartData.pendingCount
+					],
+					backgroundColor: [
+						'rgba(34, 197, 94, 0.8)',
+						'rgba(245, 158, 11, 0.8)',
+						'rgba(239, 68, 68, 0.8)',
+						'rgba(148, 163, 184, 0.8)'
+					],
+					borderColor: [
+						'rgba(34, 197, 94, 1)',
+						'rgba(245, 158, 11, 1)',
+						'rgba(239, 68, 68, 1)',
+						'rgba(148, 163, 184, 1)'
+					],
+					borderWidth: 2
+				}]
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: true,
+				plugins: {
+					legend: {
+						position: 'bottom',
+						labels: {
+							color: textColor,
+							padding: 12,
+							font: {
+								size: 12
+							}
+						}
+					},
+					tooltip: {
+						backgroundColor: isDark ? 'rgba(30, 41, 59, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+						titleColor: textColor,
+						bodyColor: textColor,
+						borderColor: gridColor,
+						borderWidth: 1
+					}
+				}
+			}
+		});
+	}
+	
+	// Compliance Rate Chart (Gauge/Progress)
+	const complianceCtx = document.getElementById('complianceChart');
+	if (complianceCtx) {
+		new Chart(complianceCtx, {
+			type: 'doughnut',
+			data: {
+				labels: [
+					'<%= lang === "en" ? "Compliant" : "Conformes" %>',
+					'<%= lang === "en" ? "Non-Compliant" : "Non conformes" %>'
+				],
+				datasets: [{
+					data: [
+						chartData.compliantPercentage,
+						100 - chartData.compliantPercentage
+					],
+					backgroundColor: [
+						'rgba(34, 197, 94, 0.8)',
+						'rgba(239, 68, 68, 0.2)'
+					],
+					borderColor: [
+						'rgba(34, 197, 94, 1)',
+						'rgba(239, 68, 68, 0.3)'
+					],
+					borderWidth: 2
+				}]
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: true,
+				cutout: '70%',
+				plugins: {
+					legend: {
+						display: false
+					},
+					tooltip: {
+						enabled: false
+					},
+					datalabels: {
+						display: false
+					}
+				}
+			},
+			plugins: [{
+				id: 'centerText',
+				beforeDraw: (chart) => {
+					const ctx = chart.ctx;
+					const centerX = chart.chartArea.left + (chart.chartArea.right - chart.chartArea.left) / 2;
+					const centerY = chart.chartArea.top + (chart.chartArea.bottom - chart.chartArea.top) / 2;
+					
+					ctx.save();
+					ctx.font = 'bold 32px Poppins';
+					ctx.fillStyle = textColor;
+					ctx.textAlign = 'center';
+					ctx.textBaseline = 'middle';
+					ctx.fillText(chartData.compliantPercentage + '%', centerX, centerY - 10);
+					
+					ctx.font = '14px Poppins';
+					ctx.fillStyle = isDark ? '#aab7d6' : '#64748b';
+					ctx.fillText('<%= lang === "en" ? "Compliant" : "Conformes" %>', centerX, centerY + 20);
+					ctx.restore();
+				}
+			}]
+		});
+	}
+	
+	// Risks Chart (Bar)
+	const risksCtx = document.getElementById('risksChart');
+	if (risksCtx) {
+		new Chart(risksCtx, {
+			type: 'bar',
+			data: {
+				labels: [
+					'<%= lang === "en" ? "Critical Risks" : "Risques critiques" %>',
+					'<%= lang === "en" ? "In Progress" : "En cours" %>',
+					'<%= lang === "en" ? "Pending" : "En attente" %>'
+				],
+				datasets: [{
+					label: '<%= lang === "en" ? "Count" : "Nombre" %>',
+					data: [
+						chartData.nonCompliantCount,
+						chartData.inProgressCount,
+						chartData.pendingCount
+					],
+					backgroundColor: [
+						'rgba(239, 68, 68, 0.8)',
+						'rgba(245, 158, 11, 0.8)',
+						'rgba(148, 163, 184, 0.8)'
+					],
+					borderColor: [
+						'rgba(239, 68, 68, 1)',
+						'rgba(245, 158, 11, 1)',
+						'rgba(148, 163, 184, 1)'
+					],
+					borderWidth: 2,
+					borderRadius: 6
+				}]
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: true,
+				scales: {
+					y: {
+						beginAtZero: true,
+						ticks: {
+							color: textColor,
+							stepSize: 1
+						},
+						grid: {
+							color: gridColor
+						}
+					},
+					x: {
+						ticks: {
+							color: textColor
+						},
+						grid: {
+							display: false
+						}
+					}
+				},
+				plugins: {
+					legend: {
+						display: false
+					},
+					tooltip: {
+						backgroundColor: isDark ? 'rgba(30, 41, 59, 0.95)' : 'rgba(255, 255, 255, 0.95)',
+						titleColor: textColor,
+						bodyColor: textColor,
+						borderColor: gridColor,
+						borderWidth: 1
+					}
+				}
 			}
 		});
 	}

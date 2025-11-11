@@ -455,6 +455,61 @@ app.get('/admin', requireAuth, async (req, res) => {
 	const pendingCountResult = await dbGet(`SELECT COUNT(*) as count FROM assessments WHERE validation_status = 'PENDING' OR validation_status IS NULL`);
 	const pendingCount = pendingCountResult?.count || 0;
 	
+	// Calculate average compliance time (délai moyen de mise en conformité)
+	// For each supplier that became COMPLIANT, calculate time from first assessment to compliance
+	// Get all assessments ordered by date for each supplier
+	const allAssessments = await dbAll(`
+		SELECT supplier_id, created_at, validated_at, status
+		FROM assessments
+		ORDER BY supplier_id, created_at ASC
+	`);
+	
+	// Group by supplier and find first assessment date and compliance date
+	const supplierComplianceData = {};
+	for (const assessment of allAssessments) {
+		const supplierId = assessment.supplier_id;
+		if (!supplierComplianceData[supplierId]) {
+			supplierComplianceData[supplierId] = {
+				firstAssessmentDate: assessment.created_at,
+				complianceDate: null
+			};
+		}
+		// If this assessment is COMPLIANT and we don't have a compliance date yet, use it
+		if (assessment.status === 'COMPLIANT' && !supplierComplianceData[supplierId].complianceDate) {
+			supplierComplianceData[supplierId].complianceDate = assessment.validated_at || assessment.created_at;
+		}
+	}
+	
+	// Calculate average days
+	let averageComplianceDays = 0;
+	let totalDays = 0;
+	let validCount = 0;
+	
+	for (const supplierId in supplierComplianceData) {
+		const data = supplierComplianceData[supplierId];
+		if (data.firstAssessmentDate && data.complianceDate) {
+			const firstDate = new Date(data.firstAssessmentDate);
+			const compDate = new Date(data.complianceDate);
+			if (compDate >= firstDate) {
+				const diffTime = compDate - firstDate;
+				const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+				totalDays += diffDays;
+				validCount++;
+			}
+		}
+	}
+	
+	if (validCount > 0) {
+		averageComplianceDays = Math.round(totalDays / validCount);
+	}
+	
+	// Calculate KPI data for charts
+	const totalSuppliers = suppliersWithStatus.length;
+	const compliantCount = suppliersWithStatus.filter(s => s.statusKey === 'COMPLIANT').length;
+	const inProgressCount = suppliersWithStatus.filter(s => s.statusKey === 'IN_PROGRESS').length;
+	const nonCompliantCount = suppliersWithStatus.filter(s => s.statusKey === 'NON_COMPLIANT').length;
+	const compliantPercentage = totalSuppliers > 0 ? Math.round((compliantCount / totalSuppliers) * 100) : 0;
+	
 	// Check if notification has been marked as read
 	// Compare the current pending count with the count when it was marked as read
 	// If current count is greater than last read count, show notification (new assessments arrived)
@@ -469,6 +524,13 @@ app.get('/admin', requireAuth, async (req, res) => {
 		getValidationStatus,
 		pendingCount: pendingCount,
 		notificationRead: notificationRead,
+		averageComplianceDays: averageComplianceDays,
+		// Chart data
+		totalSuppliers: totalSuppliers,
+		compliantCount: compliantCount,
+		inProgressCount: inProgressCount,
+		nonCompliantCount: nonCompliantCount,
+		compliantPercentage: compliantPercentage,
 		lang, 
 		urlWithLang: res.locals.urlWithLang
 	});

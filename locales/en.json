@@ -38,6 +38,7 @@
     "title": "Dashboard",
     "totalSuppliers": "Total Suppliers",
     "averageScore": "Average Score",
+    "averageComplianceTime": "Average Compliance Time",
     "compliantSuppliers": "Compliant Suppliers",
     "addSupplier": "Add Supplier"
   },
